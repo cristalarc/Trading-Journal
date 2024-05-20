@@ -1,15 +1,14 @@
-
-Numbers stored as text, might not be a problem if they are handled internally.
 Dates stored as text? maybe this is not a big deal
-Fix the dropdown list functionality being erased
 
 --Optimization--
 See what can be optimized to only use openpyxl instead of Pandas
+Check for redundant module opening:
+    - Call the excel application once and then pass it to where its needed, like close_open_file
 Check which files can be sent from one function to other to avoid reopening
 Check if the 1 second sleep is required in the file closer
 
 --Bugs--
-
+Fix the dropdown list functionality being erased
 
 --To Test--
 

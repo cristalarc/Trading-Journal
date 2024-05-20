@@ -1,5 +1,4 @@
 import pandas as pd
-import csv #FIXME Check if this is used 
 import os
 import logging
 from tkinter import *
@@ -9,6 +8,8 @@ import time
 import shutil
 import glob # For file pattern matching
 import openpyxl
+from openpyxl.styles import NamedStyle
+from openpyxl.styles.numbers import BUILTIN_FORMATS
 import win32com.client # For detecting if file is open and then closing it
 import subprocess # For file opening
 
@@ -31,7 +32,11 @@ trading_dashboard_path = "Output/trading_dashboard_live.xlsx"
 tradersync_export_path = "Imports/trade_data.csv"
 
 def create_backup(file_path):
-    """Creates a timestamped backup and deletes previous backups of the given file."""
+    """Creates a timestamped backup and deletes previous backups of the given file.
+    
+    Args:
+        file_path (string): file path for the file that will be handled.
+    """
     try:
         # Backup file creation
         file_dir, file_name = os.path.split(file_path)
@@ -55,7 +60,11 @@ def create_backup(file_path):
         messagebox.showerror(title="Error", message=f"An error occurred during backup: {e}")
 
 def open_file(file_path):
-    """Open the file using the default application."""
+    """Open the file using the default application.
+    
+    Args:
+        file_path (string): file path for the file that will be handled.
+    """
     try:
         # Open the file with the default associated application
         subprocess.Popen(["start", "", file_path], shell=True)
@@ -65,7 +74,11 @@ def open_file(file_path):
         messagebox.showerror(title="Error", message=f"An error occurred while opening the file: {e}")
         
 def close_open_file(file_path):
-    """Check if the specified file is open and close it if necessary."""
+    """Check if the specified file is open and close it if necessary.
+    
+    Args:
+        file_path (string): file path for the file that will be handled.
+    """
     try:
         # Normalize and get the absolute file path for the operating system, with lower case drive letter
         normalized_file_path = os.path.abspath(os.path.normpath(file_path)).lower()
@@ -99,11 +112,10 @@ def close_open_file(file_path):
 
         # Ensure proper cleanup
         del excel
-        time.sleep(2)  # Add a short delay to ensure the Excel process releases the file
+        time.sleep(1)  # Add a short delay to ensure the Excel process releases the file
     except Exception as e:
         logger.error(f"close_open_file: An error occurred: {e}")
         messagebox.showerror(title="Error", message=f"An error occurred while closing the file: {e}")
-
 
 # ---------------------------- ERROR CHECKERS ------------------------------ #
 def check_write_permission(directory):
@@ -126,13 +138,17 @@ def check_write_permission(directory):
 FONT_NAME = "Calibri"
 FONT_SIZE = 11
 WHITE = "#fcf7f9"
-MARKET_TICKERS = ["SPY", "MES", "QQQ", "CONGLO", "IWM", "VIX"]
+MARKET_TICKERS = ["SPY", "MES", "QQQ", "CONGLO", "IWM", "VIX"]  # Tickers that track overall markets
 # ---------------------------- INPUT CHECKERS ------------------------------ #
 
 # ---------------------------- WEEKLY TASKS -------------------------------- #
 def weekly_tasks():
     """Runs the weekly tasks as defined in the instructions.
-    These are activated via a button in the UI.
+    These are activated via a button in the UI.\n
+    - Closes open files so they can be properly handled\n
+    - Creates backup of files that will be manipulated\n
+    - Clears and creates the Weekly One Pager\n
+    - Opens the file upon finishing processing
 
     Returns:
         None: Uses return to stop the code from executing as no backup can be made
@@ -148,6 +164,8 @@ def weekly_tasks():
     open_file(trading_journal_path)        # Open the file after processing
 
 def clear_one_pager():
+    """Clears the Weekly One Pager sheet
+    """    
     try:
         # Load the workbook 
         book = openpyxl.load_workbook(trading_journal_path)  
@@ -221,19 +239,36 @@ def weekly_journal_processor():
 # ---------------------------- DAILY TASKS --------------------------------- #
 def daily_tasks():
     """Runs the daily tasks as defined in the instructions.
-    These are activated via a button in the UI.
+    These are activated via a button in the UI.\n
+    - Closes open files so they can be properly handled\n
+    - Creates backup of files that will be manipulated\n
+    - Imports the tradersync (TDSync) export from the Import folder\n
+    - Processes the TDSync export to bring closed trades to the Trade Log\n
+    - Open file after processing is finished
+    #TODO
     """
     close_open_file(trading_journal_path)  # Ensure the file is not open
     close_open_file(tradersync_export_path) # Ensure the file is not open
     create_backup(trading_journal_path)    # Create backup before modifying    
     tradersync_import() # Copy Tradersync export into the TradersyncExport sheet
     process_tradersync_export() # Process the export into the trade log. Only process non OPEN entries.
+    open_file(trading_journal_path) # Open the file after processing
+
+import openpyxl
+from openpyxl.styles import NamedStyle
+from openpyxl.styles.numbers import BUILTIN_FORMATS
 
 def tradersync_import():
     """Copies trade_data.csv content to the TraderSync Export sheet in the trading_journal_path without altering the header."""
     try:
         # Load the CSV file
         trade_data_df = pd.read_csv(tradersync_export_path)
+
+        # Remove dollar signs ('$') from currency columns and convert them to float
+        currency_columns = ['Entry Price', 'Exit Price', 'Return $', 'Avg Buy', 'Avg Sell', 
+                            'Net Return', 'Commision', 'Strike', 'Cost', 'Fees', 
+                            'Return Share', 'Best Exit $']
+        trade_data_df[currency_columns] = trade_data_df[currency_columns].replace('[\$,]', '', regex=True).astype(float)
 
         # Load the Excel file
         book = openpyxl.load_workbook(trading_journal_path)
@@ -243,6 +278,16 @@ def tradersync_import():
         for row in sheet.iter_rows(min_row=2, max_row=sheet.max_row):
             for cell in row:
                 cell.value = None
+
+        # Get the built-in currency format
+        currency_format = BUILTIN_FORMATS[7]
+
+        # Apply the currency format to specified columns
+        for col_name in currency_columns:
+            col_idx = trade_data_df.columns.get_loc(col_name) + 1
+            for row_idx, value in enumerate(trade_data_df[col_name], start=2):
+                cell = sheet.cell(row=row_idx, column=col_idx)
+                cell.number_format = currency_format
 
         # Write the combined data back to the sheet
         for idx, row in trade_data_df.iterrows():
@@ -322,16 +367,30 @@ def process_tradersync_export():
             for cell in row:
                 cell.value = None
 
-        # Get column indices for Trade ID, Avg Buy, Avg Sell, and Net Return %
+        # Get column indices for Trade ID, Avg Buy, Avg Sell, Net Return %, Net Return, MAE, MFE, Best Exit $, and Best Exit %
         trade_id_col_idx = trade_log_headers.index('Trade ID') + 1
         avg_buy_col_idx = trade_log_headers.index('Avg Buy') + 1
         avg_sell_col_idx = trade_log_headers.index('Avg Sell') + 1
         net_return_pct_col_idx = trade_log_headers.index('Net Return %') + 1
+        net_return_col_idx = trade_log_headers.index('Net Return') + 1
+        mae_col_idx = trade_log_headers.index('MAE') + 1
+        mfe_col_idx = trade_log_headers.index('MFE') + 1
+        best_exit_col_idx = trade_log_headers.index('Best Exit $') + 1
+        best_exit_pct_col_idx = trade_log_headers.index('Best Exit %') + 1
+
+        # Apply the built-in currency format to specified columns
+        currency_format = BUILTIN_FORMATS[7]
+        percentage_format = '0.00%'
 
         # Write the sorted data back to the Trade Log sheet and add the formula for Net Return %
         for idx, row in combined_data.iterrows():
             for col_idx, value in enumerate(row, start=1):
-                trade_log_sheet.cell(row=idx + 2, column=col_idx, value=value)
+                cell = trade_log_sheet.cell(row=idx + 2, column=col_idx, value=value)
+                if col_idx in [avg_buy_col_idx, avg_sell_col_idx, net_return_col_idx, mae_col_idx, mfe_col_idx, best_exit_col_idx]:
+                    cell.number_format = currency_format
+                elif col_idx == best_exit_pct_col_idx:
+                    cell.number_format = percentage_format
+                    cell.value = value / 100  # Divide by 100 to correctly show percentage
             
             # Set the formula for Net Return % in the current row
             net_return_pct_cell = trade_log_sheet.cell(row=idx + 2, column=net_return_pct_col_idx)
