@@ -1,4 +1,6 @@
-Dates stored as text? maybe this is not a big deal
+--TODO--
+Recognize setup, mistake, strategy
+Populate Retro data
 
 --Optimization--
 See what can be optimized to only use openpyxl instead of Pandas

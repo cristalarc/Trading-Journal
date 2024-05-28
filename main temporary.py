@@ -254,10 +254,6 @@ def daily_tasks():
     process_tradersync_export() # Process the export into the trade log. Only process non OPEN entries.
     open_file(trading_journal_path) # Open the file after processing
 
-import openpyxl
-from openpyxl.styles import NamedStyle
-from openpyxl.styles.numbers import BUILTIN_FORMATS
-
 def tradersync_import():
     """Copies trade_data.csv content to the TraderSync Export sheet in the trading_journal_path without altering the header."""
     try:
