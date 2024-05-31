@@ -254,10 +254,6 @@ def daily_tasks():
     process_tradersync_export() # Process the export into the trade log. Only process non OPEN entries.
     open_file(trading_journal_path) # Open the file after processing
 
-import openpyxl
-from openpyxl.styles import NamedStyle
-from openpyxl.styles.numbers import BUILTIN_FORMATS
-
 def tradersync_import():
     """Copies trade_data.csv content to the TraderSync Export sheet in the trading_journal_path without altering the header."""
     try:
@@ -306,6 +302,7 @@ def tradersync_import():
 def process_tradersync_export():
     """Reads data from TraderSync Export sheet and appends specific values to Trade Log sheet without altering the headers, only if Status is different from 'OPEN'. Finally, sorts the data by Close Date in descending order and adds a formula to Net Return %."""
     try:
+        logger.info("Opening the Excel workbook.")
         # Load the Excel file
         book = openpyxl.load_workbook(trading_journal_path)
 
@@ -315,7 +312,7 @@ def process_tradersync_export():
 
         # Define the columns to be copied
         columns_to_copy = [
-            'Status', 'Symbol', 'Size', 'Open Date', 'Close Date', 'Avg Buy', 
+            'Status', 'Symbol', 'Size', 'Open Date', 'Close Date', 'Setups', 'Mistakes', 'Avg Buy', 
             'Avg Sell', 'Net Return', 'Type', 'MAE', 'MFE', 'Best Exit $', 'Best Exit %'
         ]
 
@@ -335,9 +332,13 @@ def process_tradersync_export():
         # Initialize the next Trade ID
         next_trade_id = max_trade_id + 1
 
+        # Determine the column indices for the Setup columns
+        setup_cols_idx = [trade_log_headers.index(f'Setup {i}') + 1 for i in range(1, 7)]
+
         # Iterate over rows in the TraderSync Export sheet, starting from the second row (skip headers)
         new_data_rows = []
         for row in tradersync_export_sheet.iter_rows(min_row=2, values_only=True):
+            logger.info(f"Processing row: {row}")
             # Check if the Status value is different from 'OPEN'
             status_col_index = tradersync_col_index.get('Status')
             if status_col_index and row[status_col_index - 1] != 'OPEN':
@@ -346,14 +347,46 @@ def process_tradersync_export():
                 for col_name in columns_to_copy:
                     col_index = tradersync_col_index.get(col_name)
                     if col_index:
-                        row_data.append(row[col_index - 1])
+                        # Handling for Stups and Mistakes. Max 6 Setups and 5 Mistakes.
+                        if col_name == 'Setups':
+                            setup_counter = 0
+                            setups = row[col_index - 1]
+                            if isinstance(setups, str) and setups:
+                                setup_values = [s.strip() for s in setups.split(',')]
+                                for setup_value in setup_values:
+                                    row_data.append(setup_value)
+                                    setup_counter += 1
+                                while setup_counter < 6:
+                                    row_data.append(None)
+                                    setup_counter += 1
+                            else:
+                                for _ in range(6):
+                                    row_data.append(None)
+                        elif col_name == 'Mistakes':
+                            mistake_counter = 0
+                            mistakes = row[col_index - 1]
+                            if isinstance(mistakes, str) and mistakes:
+                                mistake_values = [s.strip() for s in mistakes.split(',')]
+                                for mistake_value in mistake_values:
+                                    row_data.append(mistake_value)
+                                    mistake_counter += 1
+                                while mistake_counter < 5:
+                                    row_data.append(None)
+                                    mistake_counter += 1
+                            else:
+                                for _ in range(5):
+                                    row_data.append(None)
+                        else:
+                            row_data.append(row[col_index - 1])
                     else:
                         row_data.append(None)  # Append None if the column name is not found
                 new_data_rows.append(row_data)
+                logger.info(f"Appended row data: {row_data}")
                 next_trade_id += 1  # Increment the Trade ID for the next entry
-
+        
+        logger.debug(f"Passed data: {new_data_rows}")
         # Create a DataFrame for the new data
-        new_data_df = pd.DataFrame(new_data_rows, columns=['Trade ID'] + columns_to_copy)
+        new_data_df = pd.DataFrame(new_data_rows, columns=['Trade ID'] + columns_to_copy[:5] + [f'Setup {i}' for i in range(1, 7)] + [f'Mistakes {i}' for i in range(1, 6)]+ columns_to_copy[7:])
 
         # Combine existing data with the new data
         combined_data = pd.concat([existing_data, new_data_df], ignore_index=True)
@@ -397,8 +430,11 @@ def process_tradersync_export():
             net_return_pct_cell.value = f"=({trade_log_sheet.cell(row=idx + 2, column=avg_sell_col_idx).coordinate}-{trade_log_sheet.cell(row=idx + 2, column=avg_buy_col_idx).coordinate})/{trade_log_sheet.cell(row=idx + 2, column=avg_buy_col_idx).coordinate}"
             net_return_pct_cell.number_format = '0.00%'
 
+        logger.info("Finished writing data to Trade Log sheet.")
+
         # Save the workbook
         book.save(trading_journal_path)
+        logger.info("Workbook saved.")
 
         logger.info("process_tradersync_export: Data from TraderSync Export sheet appended and sorted in Trade Log sheet successfully.")
         messagebox.showinfo(title="Success", message="Data processed, appended, and sorted in Trade Log successfully.")

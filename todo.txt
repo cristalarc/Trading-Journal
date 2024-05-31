@@ -1,5 +1,4 @@
 --TODO--
-Recognize setup, mistake, strategy
 Populate Retro data
 
 --Optimization--
@@ -14,15 +13,23 @@ Fix the dropdown list functionality being erased
 
 --To Test--
 
-
 --Tested--
 Close the trade_data export from tradersync before processing
 Journal copies the correct information and sorts by Close Date correctly
 Daily tasks does not delete data in the Trade Log, it only appends
 Weekly One Pager sorts by date first, then follows the prioritization schedule
 Tested that Trade ID continues to increase even when there's data already in the Trade Log
+Tested the Setups and Mistakes feature.
+Tested when there's no Setup or Mistake.
 
 --Smashed Bugs--
 Adding a 2nd set of tradersync export would append instead of clearing and appending
 Wrong sorting order for Trade Log
 Excel closer closes all open excels, not just the ones to use
+
+--Checklist--
+Journal MANUAL
+Weekly One Pager DONE
+TraderSyncExport DONE
+Trade Log DONE
+Retro
