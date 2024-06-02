@@ -117,6 +117,22 @@ def close_open_file(file_path):
         logger.error(f"close_open_file: An error occurred: {e}")
         messagebox.showerror(title="Error", message=f"An error occurred while closing the file: {e}")
 
+def excel_cell_formater(format):
+    """Applies an excel format to the requested cell.
+    You can assign with cell.number_format = call this function.
+
+    Args:
+        format (string: %,USD): list of available formats that can be implemented.
+    """    
+    # Apply the built-in currency format to specified columns
+    currency_USD_format = BUILTIN_FORMATS[7]
+    percentage_format = '0.00%'
+    if format == "USD":
+        return currency_USD_format
+    elif format == "%":
+        return percentage_format
+
+
 # ---------------------------- ERROR CHECKERS ------------------------------ #
 def check_write_permission(directory):
     """Check if the user has writer permission to create file backup
@@ -138,7 +154,7 @@ def check_write_permission(directory):
 FONT_NAME = "Calibri"
 FONT_SIZE = 11
 WHITE = "#fcf7f9"
-MARKET_TICKERS = ["SPY", "MES", "QQQ", "CONGLO", "IWM", "VIX"]  # Tickers that track overall markets
+MARKET_SYMBOLS = ["SPY", "MES", "QQQ", "CONGLO", "IWM", "VIX"]  # Tickers/Symbols that track overall markets
 # ---------------------------- INPUT CHECKERS ------------------------------ #
 
 # ---------------------------- WEEKLY TASKS -------------------------------- #
@@ -202,11 +218,11 @@ def weekly_journal_processor():
             (journal_df['Date'] >= start_of_week) &
             (journal_df['Date'] <= end_of_week) &
             (journal_df['Weekly One Pager'] != 'no')
-        ]
+        ].copy()  # Using .copy() to avoid SettingWithCopyWarning
 
         # Create a priority column for sorting
-        current_week_df['Priority'] = current_week_df.apply(
-            lambda row: (0 if row['Ticker'] in MARKET_TICKERS else (1 if row['Followup'] == 'Yes' else 2)), 
+        current_week_df.loc[:, 'Priority'] = current_week_df.apply(
+            lambda row: (0 if row['Symbol'] in MARKET_SYMBOLS else (1 if row['Followup'] == 'Yes' else 2)), 
             axis=1
         )
 
@@ -214,7 +230,7 @@ def weekly_journal_processor():
         current_week_df = current_week_df.sort_values(by=['Date', 'Priority'], ascending=[False, True])
 
         # Select required columns and make a copy
-        selected_columns = current_week_df[['Date', 'Ticker', 'Comments', 'Key Support Level', 'Key Resistance Level', 'Weekly One Pager']].copy()
+        selected_columns = current_week_df[['Date', 'Symbol', 'Comments', 'Key Support Level', 'Key Resistance Level', 'Weekly One Pager']].copy()
 
         # Rename columns in the copied DataFrame
         selected_columns.rename(columns={
@@ -223,7 +239,6 @@ def weekly_journal_processor():
 
         # Append to Weekly One Pager sheet
         with pd.ExcelWriter(trading_journal_path, mode='a', if_sheet_exists='overlay') as writer:
-            workbook = writer.book #FIXME is this used?
             worksheet = writer.sheets["Weekly One Pager"]
             start_row = worksheet.max_row  # Find the next empty row
             selected_columns.to_excel(writer, sheet_name="Weekly One Pager", index=False, startrow=start_row, header=False)
@@ -244,6 +259,7 @@ def daily_tasks():
     - Creates backup of files that will be manipulated\n
     - Imports the tradersync (TDSync) export from the Import folder\n
     - Processes the TDSync export to bring closed trades to the Trade Log\n
+    - Processes the Retro data
     - Open file after processing is finished
     #TODO
     """
@@ -251,7 +267,9 @@ def daily_tasks():
     close_open_file(tradersync_export_path) # Ensure the file is not open
     create_backup(trading_journal_path)    # Create backup before modifying    
     tradersync_import() # Copy Tradersync export into the TradersyncExport sheet
-    process_tradersync_export() # Process the export into the trade log. Only process non OPEN entries.
+    new_retro_data_df = process_tradersync_export() # Process the export into the trade log. Only process non OPEN entries.
+    if new_retro_data_df is not None:
+        process_retro(new_retro_data_df)  # Process the Retrospective data
     open_file(trading_journal_path) # Open the file after processing
 
 def tradersync_import():
@@ -312,7 +330,7 @@ def process_tradersync_export():
 
         # Define the columns to be copied
         columns_to_copy = [
-            'Status', 'Symbol', 'Size', 'Open Date', 'Close Date', 'Setups', 'Mistakes', 'Avg Buy', 
+            'Status', 'Symbol', 'Size', 'Open Date', 'Close Date', 'Setups', 'Mistakes', 'Entry Price', 'Exit Price', 'Avg Buy', 
             'Avg Sell', 'Net Return', 'Type', 'MAE', 'MFE', 'Best Exit $', 'Best Exit %'
         ]
 
@@ -331,9 +349,6 @@ def process_tradersync_export():
 
         # Initialize the next Trade ID
         next_trade_id = max_trade_id + 1
-
-        # Determine the column indices for the Setup columns
-        setup_cols_idx = [trade_log_headers.index(f'Setup {i}') + 1 for i in range(1, 7)]
 
         # Iterate over rows in the TraderSync Export sheet, starting from the second row (skip headers)
         new_data_rows = []
@@ -387,7 +402,6 @@ def process_tradersync_export():
         logger.debug(f"Passed data: {new_data_rows}")
         # Create a DataFrame for the new data
         new_data_df = pd.DataFrame(new_data_rows, columns=['Trade ID'] + columns_to_copy[:5] + [f'Setup {i}' for i in range(1, 7)] + [f'Mistakes {i}' for i in range(1, 6)]+ columns_to_copy[7:])
-
         # Combine existing data with the new data
         combined_data = pd.concat([existing_data, new_data_df], ignore_index=True)
 
@@ -400,8 +414,9 @@ def process_tradersync_export():
             for cell in row:
                 cell.value = None
 
-        # Get column indices for Trade ID, Avg Buy, Avg Sell, Net Return %, Net Return, MAE, MFE, Best Exit $, and Best Exit %
-        trade_id_col_idx = trade_log_headers.index('Trade ID') + 1
+        # Get column indices for Trade ID, Entry Price, Exit Price, Avg Buy, Avg Sell, Net Return %, Net Return, MAE, MFE, Best Exit $, and Best Exit %
+        entry_price_col_idx = trade_log_headers.index('Entry Price') + 1
+        exit_price_col_idx = trade_log_headers.index('Exit Price') + 1
         avg_buy_col_idx = trade_log_headers.index('Avg Buy') + 1
         avg_sell_col_idx = trade_log_headers.index('Avg Sell') + 1
         net_return_pct_col_idx = trade_log_headers.index('Net Return %') + 1
@@ -411,18 +426,14 @@ def process_tradersync_export():
         best_exit_col_idx = trade_log_headers.index('Best Exit $') + 1
         best_exit_pct_col_idx = trade_log_headers.index('Best Exit %') + 1
 
-        # Apply the built-in currency format to specified columns
-        currency_format = BUILTIN_FORMATS[7]
-        percentage_format = '0.00%'
-
         # Write the sorted data back to the Trade Log sheet and add the formula for Net Return %
         for idx, row in combined_data.iterrows():
             for col_idx, value in enumerate(row, start=1):
                 cell = trade_log_sheet.cell(row=idx + 2, column=col_idx, value=value)
-                if col_idx in [avg_buy_col_idx, avg_sell_col_idx, net_return_col_idx, mae_col_idx, mfe_col_idx, best_exit_col_idx]:
-                    cell.number_format = currency_format
+                if col_idx in [entry_price_col_idx, exit_price_col_idx, avg_buy_col_idx, avg_sell_col_idx, net_return_col_idx, mae_col_idx, mfe_col_idx, best_exit_col_idx]:
+                    cell.number_format = excel_cell_formater("USD")
                 elif col_idx == best_exit_pct_col_idx:
-                    cell.number_format = percentage_format
+                    cell.number_format = excel_cell_formater("%")
                     cell.value = value / 100  # Divide by 100 to correctly show percentage
             
             # Set the formula for Net Return % in the current row
@@ -438,9 +449,113 @@ def process_tradersync_export():
 
         logger.info("process_tradersync_export: Data from TraderSync Export sheet appended and sorted in Trade Log sheet successfully.")
         messagebox.showinfo(title="Success", message="Data processed, appended, and sorted in Trade Log successfully.")
+
+        return new_data_df
     except Exception as e:
         logger.error(f"process_tradersync_export: An error occurred: {e}")
         messagebox.showerror(title="Error", message=f"An error occurred while processing the TraderSync export: {e}")
+
+def process_retro(retro_df):
+    """Appends specific information from the new_data_df to the Retro sheet.
+        Args:
+        retro_df (pandas dataframe): new pandas data dataframe from daily processing
+    """
+    try:
+        logger.info("Opening the Excel workbook for Retro processing.")
+        # Load the Excel file
+        book = openpyxl.load_workbook(trading_journal_path)
+
+        # Load the Retro sheet, create if it doesn't exist
+        if 'Retro' in book.sheetnames:
+            retro_sheet = book['Retro']
+        else:
+            retro_sheet = book.create_sheet('Retro')
+
+        # Load the Data Tags sheet
+        data_tags_sheet = book['Data Tags']
+        data_tags_df = pd.DataFrame(data_tags_sheet.iter_rows(values_only=True, min_row=2), columns=[cell.value for cell in data_tags_sheet[1]])
+
+        # Create lists for each column in the Data Tags sheet
+        strategy_list = data_tags_df['Strategy'].dropna().tolist()
+        sourced_list = data_tags_df['Sourced'].dropna().tolist()
+        quality_list = data_tags_df['Quality'].dropna().tolist()
+        exit_feeling_list = data_tags_df['Exit Feeling'].dropna().tolist()
+
+        # Define the columns to be copied from new_data_df
+        columns_to_copy = [
+            'Trade ID', 'Symbol', 'Close Date', 'Entry Price', 'Exit Price', 
+            'Avg Buy', 'Avg Sell', 'Net Return', 'Status'
+        ]
+
+        # Prepare the new data to append
+        new_data_to_append = retro_df[columns_to_copy + [f'Setup {i}' for i in range(1, 7)] + [f'Mistakes {i}' for i in range(1, 6)]].copy()
+
+        # Initialize columns for Strategy, Sourced, Quality, Exit Feeling
+        new_data_to_append.loc[:, 'Strategy'] = None
+        new_data_to_append.loc[:, 'Sourced'] = None
+        new_data_to_append.loc[:, 'Quality'] = None
+        new_data_to_append.loc[:, 'Exit Feeling'] = None
+
+        # Match Setups with Data Tags lists
+        for idx, row in new_data_to_append.iterrows():
+            for i in range(1, 7):
+                setup_value = row[f'Setup {i}']
+                if pd.notna(setup_value):
+                    if setup_value in strategy_list:
+                        new_data_to_append.loc[idx, 'Strategy'] = setup_value
+                    if setup_value in sourced_list:
+                        new_data_to_append.loc[idx, 'Sourced'] = setup_value
+                    if setup_value in quality_list:
+                        new_data_to_append.loc[idx, 'Quality'] = setup_value
+            
+            for i in range(1, 6):
+                mistake_value = row[f'Mistakes {i}']
+                if pd.notna(mistake_value) and mistake_value in exit_feeling_list:
+                    new_data_to_append.loc[idx, 'Exit Feeling'] = mistake_value
+
+        # Load existing data from Retro sheet into a DataFrame
+        retro_headers = [cell.value for cell in retro_sheet[1]]
+        existing_data = pd.DataFrame(retro_sheet.iter_rows(values_only=True, min_row=2), columns=retro_headers)
+
+        # Combine existing data with the new data
+        combined_data = pd.concat([existing_data, new_data_to_append[columns_to_copy + ['Strategy', 'Sourced', 'Quality', 'Exit Feeling']]], ignore_index=True)
+
+        # Clear the Retro sheet except the header
+        for row in retro_sheet.iter_rows(min_row=2, max_row=retro_sheet.max_row):
+            for cell in row:
+                cell.value = None
+
+        # Ensure Retro sheet has the correct headers
+        for col_idx, header in enumerate(columns_to_copy + ['Strategy', 'Sourced', 'Quality', 'Exit Feeling'], start=1):
+            retro_sheet.cell(row=1, column=col_idx, value=header)
+
+        # Get column indices for Entry Price, Exit Price, Avg Buy, Avg Sell, Net Return
+        retro_entry_price_col_idx = retro_headers.index('Entry Price') + 1
+        retro_exit_price_col_idx = retro_headers.index('Exit Price') + 1
+        retro_avg_buy_col_idx = retro_headers.index('Avg Buy') + 1
+        retro_avg_sell_col_idx = retro_headers.index('Avg Sell') + 1
+        retro_net_return = retro_headers.index('Net Return') + 1
+
+        # Write the combined data back to the Retro sheet, and apply formats to desired cells
+        for idx, row in combined_data.iterrows():
+            for col_idx, value in enumerate(row, start=1):
+                retro_cell = retro_sheet.cell(row=idx + 2, column=col_idx, value=value)
+                if col_idx in [retro_entry_price_col_idx, retro_exit_price_col_idx, retro_avg_buy_col_idx, retro_avg_sell_col_idx, retro_net_return]:
+                    retro_cell.number_format = BUILTIN_FORMATS[7]
+
+        logger.info("Finished writing data to Retro sheet.")
+
+        # Save the workbook
+        book.save(trading_journal_path)
+        logger.info("Workbook saved.")
+
+        logger.info("process_retro: Data from new_data_df appended to Retro sheet successfully.")
+        messagebox.showinfo(title="Success", message="Data processed and appended to Retro sheet successfully.")
+    except Exception as e:
+        logger.error(f"process_retro: An error occurred: {e}")
+        messagebox.showerror(title="Error", message=f"An error occurred while processing the Retro data: {e}")
+
+
 
 # ---------------------------- UI SETUP ------------------------------------ #
 # Main window UI setup
