@@ -1,5 +1,10 @@
 --TODO--
 Populate Retro data
+Update Strategies
+
+Change Setup data to be single cell with comma separated values.
+This will enable Class building, and subsequent saving them in some folder
+Add class builder for Trade Setups
 
 --Optimization--
 See what can be optimized to only use openpyxl instead of Pandas
@@ -9,11 +14,13 @@ Check for redundant module opening:
 Check which files can be sent from one function to other to avoid reopening
 Check if the 1 second sleep is required in the file closer
 
+
 --Bugs--
 Fix the dropdown list functionality being erased
 
 --To Test--
 Data with Sourced and Quality tags
+Date with D+3 or EOW Retrospective
 
 --Tested--
 Close the trade_data export from tradersync before processing
