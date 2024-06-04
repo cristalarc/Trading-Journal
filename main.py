@@ -138,7 +138,6 @@ def excel_cell_formater(format):
     elif format == "date":
         return date_format
 
-
 # ---------------------------- ERROR CHECKERS ------------------------------ #
 def check_write_permission(directory):
     """Check if the user has writer permission to create file backup
@@ -574,6 +573,13 @@ def process_retro(retro_df):
         logger.error(f"process_retro: An error occurred: {e}")
         messagebox.showerror(title="Error", message=f"An error occurred while processing the Retro data: {e}")
 
+# ---------------------------- STRATEGY DB --------------------------------- #
+def update_strategies():
+    """Runs the strategy DB update task.
+    This will create a dictionary with all the current strategies and related info.
+    """
+    pass
+
 # ---------------------------- UI SETUP ------------------------------------ #
 # Main window UI setup
 main_window = Tk()
@@ -587,5 +593,9 @@ weekly_task_button.grid(column=0, row=0)
 # Action button that will run the daily tasks
 daily_task_button = Button(text="Perform Daily Tasks", command=daily_tasks)
 daily_task_button.grid(column=0, row=1)
+
+# Action button that will run the strategy update task
+strategy_update_button = Button(text="Update Strategies", command=update_strategies)
+strategy_update_button.grid(column=0, row=2)
 
 main_window.mainloop()

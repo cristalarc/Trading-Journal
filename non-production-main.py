@@ -122,16 +122,21 @@ def excel_cell_formater(format):
     You can assign with cell.number_format = call this function.
 
     Args:
-        format (string: %,USD): list of available formats that can be implemented.
+        format (string: %,USD, date, etc): list of available formats that can be implemented.
+            %: Excel percentage cell format
+            USD: Excel currency $ format
+            date: Excel mm/dd/yyyy date format
     """    
     # Apply the built-in currency format to specified columns
     currency_USD_format = BUILTIN_FORMATS[7]
     percentage_format = '0.00%'
+    date_format = BUILTIN_FORMATS[14]
     if format == "USD":
         return currency_USD_format
     elif format == "%":
         return percentage_format
-
+    elif format == "date":
+        return date_format
 
 # ---------------------------- ERROR CHECKERS ------------------------------ #
 def check_write_permission(directory):
@@ -189,8 +194,14 @@ def clear_one_pager():
         # Select the sheet
         sheet = book['Weekly One Pager']
 
+        # Save data validations
+        data_validations = sheet.data_validations
+
         # Clear all rows except the header
         sheet.delete_rows(2, sheet.max_row)  
+
+        # Reapply data validations
+        sheet.data_validations = data_validations
 
         # Save the changes
         book.save(trading_journal_path) 
@@ -288,25 +299,28 @@ def tradersync_import():
         book = openpyxl.load_workbook(trading_journal_path)
         sheet = book['TraderSync Export']
 
+        # Save data validations
+        data_validations = sheet.data_validations
+
         # Clear the sheet except the header
         for row in sheet.iter_rows(min_row=2, max_row=sheet.max_row):
             for cell in row:
                 cell.value = None
-
-        # Get the built-in currency format
-        currency_format = BUILTIN_FORMATS[7]
 
         # Apply the currency format to specified columns
         for col_name in currency_columns:
             col_idx = trade_data_df.columns.get_loc(col_name) + 1
             for row_idx, value in enumerate(trade_data_df[col_name], start=2):
                 cell = sheet.cell(row=row_idx, column=col_idx)
-                cell.number_format = currency_format
+                cell.number_format = excel_cell_formater("USD")
 
         # Write the combined data back to the sheet
         for idx, row in trade_data_df.iterrows():
             for col_idx, value in enumerate(row):
                 sheet.cell(row=idx + 2, column=col_idx + 1, value=value)
+
+        # Reapply data validations
+        sheet.data_validations = data_validations
 
         # Save the workbook
         book.save(trading_journal_path)
@@ -327,6 +341,9 @@ def process_tradersync_export():
         # Load the TraderSync Export and Trade Log sheets
         tradersync_export_sheet = book['TraderSync Export']
         trade_log_sheet = book['Trade Log']
+
+        # Save data validations
+        data_validations = trade_log_sheet.data_validations
 
         # Define the columns to be copied
         columns_to_copy = [
@@ -443,6 +460,9 @@ def process_tradersync_export():
 
         logger.info("Finished writing data to Trade Log sheet.")
 
+        # Reapply data validations
+        trade_log_sheet.data_validations = data_validations
+
         # Save the workbook
         book.save(trading_journal_path)
         logger.info("Workbook saved.")
@@ -471,15 +491,24 @@ def process_retro(retro_df):
         else:
             retro_sheet = book.create_sheet('Retro')
 
+        # Save data validations
+        data_validations_retro = retro_sheet.data_validations
+
         # Load the Data Tags sheet
         data_tags_sheet = book['Data Tags']
         data_tags_df = pd.DataFrame(data_tags_sheet.iter_rows(values_only=True, min_row=2), columns=[cell.value for cell in data_tags_sheet[1]])
+
+        # Save data validations
+        data_validations_tags = data_tags_sheet.data_validations
 
         # Create lists for each column in the Data Tags sheet
         strategy_list = data_tags_df['Strategy'].dropna().tolist()
         sourced_list = data_tags_df['Sourced'].dropna().tolist()
         quality_list = data_tags_df['Quality'].dropna().tolist()
         exit_feeling_list = data_tags_df['Exit Feeling'].dropna().tolist()
+
+        # Create dictionary for current strategies with Retro Due Date
+        current_strategies = dict(zip(data_tags_df['Strategy'], data_tags_df['Retro Due Date']))
 
         # Define the columns to be copied from new_data_df
         columns_to_copy = [
@@ -490,11 +519,12 @@ def process_retro(retro_df):
         # Prepare the new data to append
         new_data_to_append = retro_df[columns_to_copy + [f'Setup {i}' for i in range(1, 7)] + [f'Mistakes {i}' for i in range(1, 6)]].copy()
 
-        # Initialize columns for Strategy, Sourced, Quality, Exit Feeling
+        # Initialize columns for Strategy, Sourced, Quality, Exit Feeling, Retro Due Date
         new_data_to_append.loc[:, 'Strategy'] = None
         new_data_to_append.loc[:, 'Sourced'] = None
         new_data_to_append.loc[:, 'Quality'] = None
         new_data_to_append.loc[:, 'Exit Feeling'] = None
+        new_data_to_append.loc[:, 'Retro Due Date'] = None
 
         # Match Setups with Data Tags lists
         for idx, row in new_data_to_append.iterrows():
@@ -503,6 +533,15 @@ def process_retro(retro_df):
                 if pd.notna(setup_value):
                     if setup_value in strategy_list:
                         new_data_to_append.loc[idx, 'Strategy'] = setup_value
+                        retro_due_date_value = current_strategies.get(setup_value)
+                        close_date = pd.to_datetime(row['Close Date'])
+                        if retro_due_date_value == "EOD":
+                            new_data_to_append.loc[idx, 'Retro Due Date'] = close_date
+                        elif retro_due_date_value == "EOW":
+                            end_of_week = close_date + timedelta(days=(6 - close_date.weekday()))
+                            new_data_to_append.loc[idx, 'Retro Due Date'] = end_of_week
+                        elif retro_due_date_value == "D+3":
+                            new_data_to_append.loc[idx, 'Retro Due Date'] = close_date + timedelta(days=3)
                     if setup_value in sourced_list:
                         new_data_to_append.loc[idx, 'Sourced'] = setup_value
                     if setup_value in quality_list:
@@ -518,7 +557,7 @@ def process_retro(retro_df):
         existing_data = pd.DataFrame(retro_sheet.iter_rows(values_only=True, min_row=2), columns=retro_headers)
 
         # Combine existing data with the new data
-        combined_data = pd.concat([existing_data, new_data_to_append[columns_to_copy + ['Strategy', 'Sourced', 'Quality', 'Exit Feeling']]], ignore_index=True)
+        combined_data = pd.concat([existing_data, new_data_to_append[columns_to_copy + ['Strategy', 'Sourced', 'Quality', 'Exit Feeling', 'Retro Due Date']]], ignore_index=True)
 
         # Clear the Retro sheet except the header
         for row in retro_sheet.iter_rows(min_row=2, max_row=retro_sheet.max_row):
@@ -526,7 +565,7 @@ def process_retro(retro_df):
                 cell.value = None
 
         # Ensure Retro sheet has the correct headers
-        for col_idx, header in enumerate(columns_to_copy + ['Strategy', 'Sourced', 'Quality', 'Exit Feeling'], start=1):
+        for col_idx, header in enumerate(columns_to_copy + ['Strategy', 'Sourced', 'Quality', 'Exit Feeling', 'Retro Due Date'], start=1):
             retro_sheet.cell(row=1, column=col_idx, value=header)
 
         # Get column indices for Entry Price, Exit Price, Avg Buy, Avg Sell, Net Return
@@ -535,15 +574,22 @@ def process_retro(retro_df):
         retro_avg_buy_col_idx = retro_headers.index('Avg Buy') + 1
         retro_avg_sell_col_idx = retro_headers.index('Avg Sell') + 1
         retro_net_return = retro_headers.index('Net Return') + 1
+        retro_retro_due_date = retro_headers.index('Retro Due Date') + 1
 
         # Write the combined data back to the Retro sheet, and apply formats to desired cells
         for idx, row in combined_data.iterrows():
             for col_idx, value in enumerate(row, start=1):
                 retro_cell = retro_sheet.cell(row=idx + 2, column=col_idx, value=value)
                 if col_idx in [retro_entry_price_col_idx, retro_exit_price_col_idx, retro_avg_buy_col_idx, retro_avg_sell_col_idx, retro_net_return]:
-                    retro_cell.number_format = BUILTIN_FORMATS[7]
+                    retro_cell.number_format = excel_cell_formater("USD")
+                elif col_idx in [retro_retro_due_date]:
+                    retro_cell.number_format = excel_cell_formater("date")
 
         logger.info("Finished writing data to Retro sheet.")
+
+        # Reapply data validations
+        retro_sheet.data_validations = data_validations_retro
+        data_tags_sheet.data_validations = data_validations_tags
 
         # Save the workbook
         book.save(trading_journal_path)
@@ -555,7 +601,12 @@ def process_retro(retro_df):
         logger.error(f"process_retro: An error occurred: {e}")
         messagebox.showerror(title="Error", message=f"An error occurred while processing the Retro data: {e}")
 
-
+# ---------------------------- STRATEGY DB --------------------------------- #
+def update_strategies():
+    """Runs the strategy DB update task.
+    This will create a dictionary with all the current strategies and related info.
+    """
+    pass
 
 # ---------------------------- UI SETUP ------------------------------------ #
 # Main window UI setup
@@ -570,5 +621,9 @@ weekly_task_button.grid(column=0, row=0)
 # Action button that will run the daily tasks
 daily_task_button = Button(text="Perform Daily Tasks", command=daily_tasks)
 daily_task_button.grid(column=0, row=1)
+
+# Action button that will run the strategy update task
+strategy_update_button = Button(text="Update Strategies", command=update_strategies)
+strategy_update_button.grid(column=0, row=2)
 
 main_window.mainloop()
