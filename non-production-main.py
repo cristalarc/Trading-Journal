@@ -263,7 +263,7 @@ def weekly_journal_processor():
         messagebox.showerror(title="Error", message=f"An error occurred while processing the journal: {e}")
 
 # ---------------------------- DAILY TASKS --------------------------------- #
-def daily_tasks():
+def td_import_tasks():
     """Runs the daily tasks as defined in the instructions.
     These are activated via a button in the UI.\n
     - Closes open files so they can be properly handled\n
@@ -608,6 +608,84 @@ def update_strategies():
     """
     pass
 
+# ---------------------------- REMINDERS ----------------------------------- #
+def update_reminders_tasks():
+    """Runs the update reminders tasks as indicated in instructions.
+    Goes through the Journal, Ideas and Retro sheets to detect which are missing
+    information like retro results and Trade IDs.
+    """
+    close_open_file(trading_journal_path)  # Ensure the file is not open
+    update_reminders()  # Goes through the file and updates reminders
+    open_file(trading_journal_path) # Open the file after processing
+
+def update_reminders():
+    """Runs the update reminders task.
+    This will go through all trades and make sure to highlight anything that needs to be retroed.
+    """
+    try:
+        logger.info("Opening the Excel workbook for updating reminders.")
+        # Load the Excel file
+        book = openpyxl.load_workbook(trading_journal_path)
+
+        # Load the Journal sheet
+        journal_sheet = book['Journal']
+        journal_df = pd.DataFrame(journal_sheet.iter_rows(values_only=True, min_row=2), columns=[cell.value for cell in journal_sheet[1]])
+
+        # Check for entries older than 30 days and mark as 'DUE' in the '30D Retro' column
+        today = pd.to_datetime(datetime.now().date())
+        journal_df['Date'] = pd.to_datetime(journal_df['Date'])
+        journal_df.loc[(today - journal_df['Date']).dt.days > 30, '30D Retro'] = 'DUE'
+
+        # Update the Journal sheet
+        for idx, row in journal_df.iterrows():
+            for col_idx, value in enumerate(row, start=1):
+                journal_sheet.cell(row=idx + 2, column=col_idx, value=value)
+
+        # Load the Retro sheet
+        retro_sheet = book['Retro']
+        retro_df = pd.DataFrame(retro_sheet.iter_rows(values_only=True, min_row=2), columns=[cell.value for cell in retro_sheet[1]])
+
+        # Check for Retro Due Date entries that have passed and mark as 'DUE' in the 'Retro Due Date' column
+        retro_df['Retro Due Date'] = pd.to_datetime(retro_df['Retro Due Date'])
+        retro_df.loc[retro_df['Retro Due Date'] < today, 'Retro Due Date'] = 'DUE'
+
+        # Update the Retro sheet
+        for idx, row in retro_df.iterrows():
+            for col_idx, value in enumerate(row, start=1):
+                retro_sheet.cell(row=idx + 2, column=col_idx, value=value)
+
+        # Load the Ideas sheet
+        ideas_sheet = book['Ideas']
+        ideas_df = pd.DataFrame(ideas_sheet.iter_rows(values_only=True, min_row=2), columns=[cell.value for cell in ideas_sheet[1]])
+
+        # Check for Date entries older than 1 day and update the Filter and Trade ID columns
+        ideas_df['Date'] = pd.to_datetime(ideas_df['Date'])
+        expired_mask = (today - ideas_df['Date']).dt.days > 30
+        due_mask = (today - ideas_df['Date']).dt.days > 1
+
+        logger.debug(f"Ideas DataFrame before updating: {ideas_df}")
+
+        # Update Filter column to "Expired" if older than 30 days and Filter is empty
+        ideas_df.loc[expired_mask & ideas_df['Filter'].isna(), 'Filter'] = 'Expired'
+
+        # Add "DUE" to Trade ID if older than 1 day, Filter is not "Expired", and Trade ID is empty
+        ideas_df.loc[(ideas_df['Filter'] == 'Taken') & ideas_df['Trade ID'].isna(), 'Trade ID'] = 'DUE'
+
+        logger.debug(f"Ideas DataFrame after updating: {ideas_df}")
+
+        # Update the Ideas sheet
+        for idx, row in ideas_df.iterrows():
+            for col_idx, value in enumerate(row, start=1):
+                ideas_sheet.cell(row=idx + 2, column=col_idx, value=value)
+
+        # Save the workbook
+        book.save(trading_journal_path)
+        logger.info("update_reminders: Reminders updated successfully.")
+        messagebox.showinfo(title="Success", message="Reminders updated successfully.")
+    except Exception as e:
+        logger.error(f"update_reminders: An error occurred: {e}")
+        messagebox.showerror(title="Error", message=f"An error occurred while updating reminders: {e}")
+
 # ---------------------------- UI SETUP ------------------------------------ #
 # Main window UI setup
 main_window = Tk()
@@ -619,11 +697,15 @@ weekly_task_button = Button(text="Perform Weekly Tasks", command=weekly_tasks)
 weekly_task_button.grid(column=0, row=0)
 
 # Action button that will run the daily tasks
-daily_task_button = Button(text="Perform Daily Tasks", command=daily_tasks)
-daily_task_button.grid(column=0, row=1)
+td_sync_button = Button(text="Perform Tradersync Import", command=td_import_tasks)
+td_sync_button.grid(column=0, row=1)
+
+# Action button that will update reminders
+update_reminders_button = Button(text="Update Reminders", command=update_reminders_tasks)
+update_reminders_button.grid(column=0, row=2)
 
 # Action button that will run the strategy update task
-strategy_update_button = Button(text="Update Strategies", command=update_strategies)
-strategy_update_button.grid(column=0, row=2)
+strategy_update_button = Button(text="Update Strategies WIP", command=update_strategies)
+strategy_update_button.grid(column=0, row=3)
 
 main_window.mainloop()

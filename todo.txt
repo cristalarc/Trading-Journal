@@ -1,6 +1,5 @@
 --TODO--
-Populate Retro data
-Update Strategies
+When Retro already has a DUE value, it tirggers an error
 
 Change Setup data to be single cell with comma separated values.
 This will enable Class building, and subsequent saving them in some folder
