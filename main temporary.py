@@ -163,7 +163,7 @@ MARKET_SYMBOLS = ["SPY", "MES", "QQQ", "CONGLO", "IWM", "VIX"]  # Tickers/Symbol
 # ---------------------------- INPUT CHECKERS ------------------------------ #
 
 # ---------------------------- WEEKLY TASKS -------------------------------- #
-def weekly_tasks():
+def process_one_pager_task():
     """Runs the weekly tasks as defined in the instructions.
     These are activated via a button in the UI.\n
     - Closes open files so they can be properly handled\n
@@ -181,7 +181,7 @@ def weekly_tasks():
     close_open_file(trading_journal_path)  # Ensure the file is not open
     create_backup(trading_journal_path)    # Create backup before modifying
     clear_one_pager()
-    weekly_journal_processor()
+    journal_processor()
     open_file(trading_journal_path)        # Open the file after processing
 
 def clear_one_pager():
@@ -210,7 +210,7 @@ def clear_one_pager():
     except Exception as e:
         logger.error(f"clear_one_pager: An error occurred: {e}")
 
-def weekly_journal_processor():
+def journal_processor():
     """Function to identify all the Journal notes relevant to the current week, sorting them by date and priority, and then adding them to Weekly One Pager."""
     try:
         # Load the Journal sheet
@@ -239,6 +239,7 @@ def weekly_journal_processor():
 
         # Sort by Date (descending) and Priority
         current_week_df = current_week_df.sort_values(by=['Date', 'Priority'], ascending=[False, True])
+        #FIXME Change this to just priority if preferable
 
         # Select required columns and make a copy
         selected_columns = current_week_df[['Date', 'Symbol', 'Comments', 'Key Support Level', 'Key Resistance Level', 'Weekly One Pager']].copy()
@@ -646,16 +647,23 @@ def update_reminders():
         retro_df = pd.DataFrame(retro_sheet.iter_rows(values_only=True, min_row=2), columns=[cell.value for cell in retro_sheet[1]])
 
         # Check for Retro Due Date entries that have passed and mark as 'DUE' in the 'Retro Due Date' column
-        retro_df['Retro Due Date'] = pd.to_datetime(retro_df['Retro Due Date'], errors='coerce').dt.date
-        retro_df.loc[retro_df['Retro Due Date'] < today, 'Retro Due Date'] = 'DUE'
+        retro_due_dates = []
+        for idx, row in retro_df.iterrows():
+            due_date = row['Retro Due Date']
+            if due_date != 'DUE':
+                if due_date is not None and pd.to_datetime(due_date, errors='coerce') < today:
+                    retro_due_dates.append('DUE')
+                else:
+                    retro_due_dates.append(due_date)
+            else:
+                retro_due_dates.append(due_date)
+        retro_df['Retro Due Date'] = retro_due_dates
 
         # Update the Retro sheet
         for idx, row in retro_df.iterrows():
-            if row['Retro Due Date'] == 'DUE':
-                continue  # Skip rows where Retro Due Date is already 'DUE'
             for col_idx, value in enumerate(row, start=1):
                 retro_sheet.cell(row=idx + 2, column=col_idx, value=value)
-
+                
         # Load the Ideas sheet
         ideas_sheet = book['Ideas']
         ideas_df = pd.DataFrame(ideas_sheet.iter_rows(values_only=True, min_row=2), columns=[cell.value for cell in ideas_sheet[1]])
@@ -690,7 +698,7 @@ main_window.title("Trading Journal")
 main_window.config(padx=50, pady=50, bg=WHITE)
 
 # Action button that will run the weekly tasks
-weekly_task_button = Button(text="Perform Weekly Tasks", command=weekly_tasks)
+weekly_task_button = Button(text="Process Journal", command=process_one_pager_task)
 weekly_task_button.grid(column=0, row=0)
 
 # Action button that will run the daily tasks

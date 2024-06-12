@@ -163,7 +163,7 @@ MARKET_SYMBOLS = ["SPY", "MES", "QQQ", "CONGLO", "IWM", "VIX"]  # Tickers/Symbol
 # ---------------------------- INPUT CHECKERS ------------------------------ #
 
 # ---------------------------- WEEKLY TASKS -------------------------------- #
-def weekly_tasks():
+def process_one_pager_task():
     """Runs the weekly tasks as defined in the instructions.
     These are activated via a button in the UI.\n
     - Closes open files so they can be properly handled\n
@@ -181,7 +181,7 @@ def weekly_tasks():
     close_open_file(trading_journal_path)  # Ensure the file is not open
     create_backup(trading_journal_path)    # Create backup before modifying
     clear_one_pager()
-    weekly_journal_processor()
+    journal_processor()
     open_file(trading_journal_path)        # Open the file after processing
 
 def clear_one_pager():
@@ -210,7 +210,7 @@ def clear_one_pager():
     except Exception as e:
         logger.error(f"clear_one_pager: An error occurred: {e}")
 
-def weekly_journal_processor():
+def journal_processor():
     """Function to identify all the Journal notes relevant to the current week, sorting them by date and priority, and then adding them to Weekly One Pager."""
     try:
         # Load the Journal sheet
@@ -239,6 +239,7 @@ def weekly_journal_processor():
 
         # Sort by Date (descending) and Priority
         current_week_df = current_week_df.sort_values(by=['Date', 'Priority'], ascending=[False, True])
+        #FIXME Change this to just priority if preferable
 
         # Select required columns and make a copy
         selected_columns = current_week_df[['Date', 'Symbol', 'Comments', 'Key Support Level', 'Key Resistance Level', 'Weekly One Pager']].copy()
@@ -611,12 +612,12 @@ def update_strategies():
 # ---------------------------- REMINDERS ----------------------------------- #
 def update_reminders_tasks():
     """Runs the update reminders tasks as indicated in instructions.
-    Goes through the Journal, Ideas and Retro sheets to detect which are missing
+    Goes through the Journal, Ideas, and Retro sheets to detect which are missing
     information like retro results and Trade IDs.
     """
     close_open_file(trading_journal_path)  # Ensure the file is not open
     update_reminders()  # Goes through the file and updates reminders
-    open_file(trading_journal_path) # Open the file after processing
+    open_file(trading_journal_path)  # Open the file after processing
 
 def update_reminders():
     """Runs the update reminders task.
@@ -646,8 +647,17 @@ def update_reminders():
         retro_df = pd.DataFrame(retro_sheet.iter_rows(values_only=True, min_row=2), columns=[cell.value for cell in retro_sheet[1]])
 
         # Check for Retro Due Date entries that have passed and mark as 'DUE' in the 'Retro Due Date' column
-        retro_df['Retro Due Date'] = pd.to_datetime(retro_df['Retro Due Date'])
-        retro_df.loc[retro_df['Retro Due Date'] < today, 'Retro Due Date'] = 'DUE'
+        retro_due_dates = []
+        for idx, row in retro_df.iterrows():
+            due_date = row['Retro Due Date']
+            if due_date != 'DUE':
+                if due_date is not None and pd.to_datetime(due_date, errors='coerce') < today:
+                    retro_due_dates.append('DUE')
+                else:
+                    retro_due_dates.append(due_date)
+            else:
+                retro_due_dates.append(due_date)
+        retro_df['Retro Due Date'] = retro_due_dates
 
         # Update the Retro sheet
         for idx, row in retro_df.iterrows():
@@ -659,19 +669,15 @@ def update_reminders():
         ideas_df = pd.DataFrame(ideas_sheet.iter_rows(values_only=True, min_row=2), columns=[cell.value for cell in ideas_sheet[1]])
 
         # Check for Date entries older than 1 day and update the Filter and Trade ID columns
-        ideas_df['Date'] = pd.to_datetime(ideas_df['Date'])
+        ideas_df['Date'] = pd.to_datetime(ideas_df['Date'], errors='coerce')
         expired_mask = (today - ideas_df['Date']).dt.days > 30
         due_mask = (today - ideas_df['Date']).dt.days > 1
-
-        logger.debug(f"Ideas DataFrame before updating: {ideas_df}")
 
         # Update Filter column to "Expired" if older than 30 days and Filter is empty
         ideas_df.loc[expired_mask & ideas_df['Filter'].isna(), 'Filter'] = 'Expired'
 
         # Add "DUE" to Trade ID if older than 1 day, Filter is not "Expired", and Trade ID is empty
-        ideas_df.loc[(ideas_df['Filter'] == 'Taken') & ideas_df['Trade ID'].isna(), 'Trade ID'] = 'DUE'
-
-        logger.debug(f"Ideas DataFrame after updating: {ideas_df}")
+        ideas_df.loc[(ideas_df['Filter'] != 'Expired') & ideas_df['Trade ID'].isna(), 'Trade ID'] = 'DUE'
 
         # Update the Ideas sheet
         for idx, row in ideas_df.iterrows():
@@ -686,6 +692,7 @@ def update_reminders():
         logger.error(f"update_reminders: An error occurred: {e}")
         messagebox.showerror(title="Error", message=f"An error occurred while updating reminders: {e}")
 
+
 # ---------------------------- UI SETUP ------------------------------------ #
 # Main window UI setup
 main_window = Tk()
@@ -693,7 +700,7 @@ main_window.title("Trading Journal")
 main_window.config(padx=50, pady=50, bg=WHITE)
 
 # Action button that will run the weekly tasks
-weekly_task_button = Button(text="Perform Weekly Tasks", command=weekly_tasks)
+weekly_task_button = Button(text="Process Journal", command=process_one_pager_task)
 weekly_task_button.grid(column=0, row=0)
 
 # Action button that will run the daily tasks
