@@ -1,0 +1,14 @@
+- Read the BA reccomendation and carry forward with scoping the project.
+
+
+Remember the process:
+	• Follow your roles structure so you can start talking to the correspondent agents.
+	• Brain dump about your idea, anything that you think of it and talk it through.
+	• Once you have a structured output, create:
+		○ Project requirements doc
+		○ Tech stack and packages doc
+		○ Schema design doc
+		○ Detailed app flow doc
+	• For frontend you can use v0
+	• After passing docs, ask to create a file structure
+You then proceed to ask it to build the frontend, with demo data

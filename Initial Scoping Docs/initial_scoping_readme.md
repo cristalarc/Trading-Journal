@@ -1,0 +1,1 @@
+The Initial Scoping Docs folder contains information provided by the AI agents that were used to scope the project.
