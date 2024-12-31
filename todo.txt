@@ -1,4 +1,23 @@
-- Read the BA reccomendation and carry forward with scoping the project.
+- Determine the preferred UI design style (e.g., card-based layouts) through mockups and feedback.
+- Data Model Design
+
+
+MVP Implementation (Phase 1):
+Focus on core journal entry creation and daily updates.
+Enable basic filtering by ticker and timeframe.
+Ensure API integration is functional, with manual fallback for price entry.
+--Advanced Features (Phase 2):
+Add retrospective fields and reminders.
+Enhance the UI with tabbed views and calendar-based filtering.
+--Long-Term Enhancements (Phase 3+):
+Integrate analytics for sentiment performance.
+Enable attachments (e.g., screenshots) to enrich entries.
+Develop a recommendation engine for pattern recognition.
+--Scalability and Performance:
+Use indexing for key fields and lazy loading for large datasets.
+Optimize API calls to prevent delays in price fetching.
+
+
 
 
 Remember the process:
