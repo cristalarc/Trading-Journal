@@ -1,1 +1,1 @@
-The Initial Scoping Docs folder contains information provided by the AI agents that were used to scope the project.
+The Initial Scoping Docs folder contains information provided by the AI agents that were used to scope the project, including UI, technical requirements, data model, and app flow.

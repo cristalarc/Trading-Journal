@@ -1,4 +1,8 @@
 - Determine the preferred UI design style (e.g., card-based layouts) through mockups and feedback.
+-- Test other layouts.
+-- Send to Designer agent to acquire inputs on improvements.
+-- Missing a Settings page to setup tags and strategies. Also easy setup at the journal page.
+
 - Data Model Design
 
 
@@ -18,12 +22,14 @@ Use indexing for key fields and lazy loading for large datasets.
 Optimize API calls to prevent delays in price fetching.
 
 
+- UI Improvements
+-- When you click on an entry, a panel opens on the right side showing a timeline of all comments for all timeframes. based on the week selected. See Journal_Entry_On_Click-Sidebar.png
 
 
 Remember the process:
 	• Follow your roles structure so you can start talking to the correspondent agents.
 	• Brain dump about your idea, anything that you think of it and talk it through.
-	• Once you have a structured output, create:
+	• Once you have a structured output, create from a Software Engineer agent:
 		○ Project requirements doc
 		○ Tech stack and packages doc
 		○ Schema design doc
