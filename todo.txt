@@ -1,13 +1,24 @@
 - Determine the preferred UI design style (e.g., card-based layouts) through mockups and feedback.
--- Test other layouts.
+-- Fix UI clicking issue.
 -- Send to Designer agent to acquire inputs on improvements.
 -- Missing a Settings page to setup tags and strategies. Also easy setup at the journal page.
 
 - Data Model Design
+-- Think through what an entry needs. Status of Retro? Result of Retro?
+
++ Create a Restrospective Function.
+-- Retrospective is its own function with several responsabilities. Have a PM assigned to it.
+-- Retrospective can be a process that asks if pattern played ut, if direction or sentiment were right and if the Strategy was followed (for trades, not journal entries).
+-- Automation as a setting. You can specify rules that automate the retrospective process, like determining if it was a win or not.
+-- Chart analysis of Journal entries. A chart that puts the ticker price performance over time on the background, and overlays your direction and sentiment to determine how right you were.
+
++ UI Improvements
+-- When you click on an entry, a panel opens on the right side showing a timeline of all comments for all timeframes. based on the week selected. See Journal_Entry_On_Click-Sidebar.png
+--- If using the table view layout, then when you click the eye icon, it should open panel on the right side.
 
 
 MVP Implementation (Phase 1):
-Focus on core journal entry creation and daily updates.
+Focus on core journal entry creation and daily updates. #TODO
 Enable basic filtering by ticker and timeframe.
 Ensure API integration is functional, with manual fallback for price entry.
 --Advanced Features (Phase 2):
@@ -20,11 +31,6 @@ Develop a recommendation engine for pattern recognition.
 --Scalability and Performance:
 Use indexing for key fields and lazy loading for large datasets.
 Optimize API calls to prevent delays in price fetching.
-
-
-- UI Improvements
--- When you click on an entry, a panel opens on the right side showing a timeline of all comments for all timeframes. based on the week selected. See Journal_Entry_On_Click-Sidebar.png
-
 
 Remember the process:
 	• Follow your roles structure so you can start talking to the correspondent agents.

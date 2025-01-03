@@ -1,3 +1,13 @@
+[01/03/2025] V0 Agent and UI Agent:
+- V0 Agent provided a table based layout instead of a card based layout.
+- UI Agent reccomended:
+"If your target audience includes a mix of beginners and advanced users: Choose Layout 2 as it balances user-friendliness and feature scalability.
+If your audience is primarily experienced traders: Choose Layout 1 for its efficiency and focus on quick navigation."
+- V0 Agent chose Layout 1. Provided the following upgrades to layout with help from user:
+-- Added tooltips to the headers that will host information about the column, and also a cog icon that will host settings for the column.
+-- Made Timeframe, Direction, Sentiment, and Retrospective columns clickable for Dropdown list.
+-- Added behavior for the Journal Entry interface. Created a "edit mode" that allows editing of an entry.When editing an entry, a Save button appears, and clicking on the entry will not exit edit mode.
+
 [01/02/2025] V0 Agent:
 - Created a mockup for the UI.
 1. **Main Layout**: A sidebar for navigation and a header for user actions.
