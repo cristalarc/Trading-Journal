@@ -2,11 +2,12 @@
 
 import * as React from 'react'
 import { useState } from 'react'
-import { ChevronDown, ChevronRight, Edit, Eye, HelpCircle } from 'lucide-react'
+import { ChevronDown, ChevronRight, Edit, Eye, HelpCircle, Settings } from 'lucide-react'
 import { Button } from "@/components/ui/button"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { JournalEntryDetails } from './journal-entry-details'
+import { EntryCard } from './entry-card'
 
 type Entry = {
   id: string
@@ -21,6 +22,7 @@ type Entry = {
   resistance: number
   retro7d: 'pending' | 'completed' | 'overdue'
   retro30d: 'pending' | 'completed' | 'overdue'
+  comments?: string
 }
 
 const dummyData: Entry[] = [
@@ -32,6 +34,8 @@ const dummyData: Entry[] = [
 export function JournalTable() {
   const [expandedRow, setExpandedRow] = useState<string | null>(null)
   const [entries, setEntries] = useState<Entry[]>(dummyData)
+  const [editingEntry, setEditingEntry] = useState<Entry | null>(null)
+  const [isAddingNew, setIsAddingNew] = useState(false)
 
   const toggleRow = (id: string) => {
     setExpandedRow(expandedRow === id ? null : id)
@@ -50,11 +54,36 @@ export function JournalTable() {
     }
   }
 
+  const handleAddNewEntry = () => {
+    setIsAddingNew(true)
+  }
+
+  const handleEdit = (entry: Entry) => {
+    setEditingEntry(entry)
+  }
+
+  const handleSave = (updatedEntry: Entry) => {
+    if (isAddingNew) {
+      setEntries([updatedEntry, ...entries])
+      setIsAddingNew(false)
+    } else {
+      setEntries(entries.map(entry => entry.id === updatedEntry.id ? updatedEntry : entry))
+      setEditingEntry(null)
+    }
+  }
+
+  const handleClose = () => {
+    setEditingEntry(null)
+    setIsAddingNew(false)
+  }
+
+  const handleUpdateDetails = (updatedEntry: Entry) => {
+    setEntries(entries.map(entry => entry.id === updatedEntry.id ? updatedEntry : entry))
+  }
+
   return (
     <div className="space-y-4">
-      <Button onClick={() => setEntries([...entries, { id: (entries.length + 1).toString(), date: new Date().toISOString().split('T')[0], ticker: '', price: 0, timeframe: 'Daily', direction: 'bullish', sentiment: 'neutral', pattern: '', support: 0, resistance: 0, retro7d: 'pending', retro30d: 'pending' }])}>
-        Add New Entry
-      </Button>
+      <Button onClick={handleAddNewEntry}>Add New Entry</Button>
       <Table>
         <TableHeader>
           <TableRow>
@@ -62,7 +91,21 @@ export function JournalTable() {
             <TableHead>Date</TableHead>
             <TableHead>Ticker</TableHead>
             <TableHead>Price</TableHead>
-            <TableHead>Timeframe</TableHead>
+            <TableHead>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <span className="flex items-center">
+                      Timeframe
+                      <Settings size={14} className="ml-1" />
+                    </span>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Configure timeframe options in Settings</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            </TableHead>
             <TableHead>
               <TooltipProvider>
                 <Tooltip>
@@ -93,7 +136,21 @@ export function JournalTable() {
                 </Tooltip>
               </TooltipProvider>
             </TableHead>
-            <TableHead>Pattern</TableHead>
+            <TableHead>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <span className="flex items-center">
+                      Pattern
+                      <Settings size={14} className="ml-1" />
+                    </span>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Configure pattern options in Settings</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            </TableHead>
             <TableHead>
               <TooltipProvider>
                 <Tooltip>
@@ -155,7 +212,7 @@ export function JournalTable() {
                 </TableCell>
                 <TableCell>
                   <div className="flex space-x-2">
-                    <Button variant="ghost" size="sm"><Edit size={16} /></Button>
+                    <Button variant="ghost" size="sm" onClick={() => handleEdit(entry)}><Edit size={16} /></Button>
                     <Button variant="ghost" size="sm"><Eye size={16} /></Button>
                   </div>
                 </TableCell>
@@ -163,7 +220,7 @@ export function JournalTable() {
               {expandedRow === entry.id && (
                 <TableRow>
                   <TableCell colSpan={11}>
-                    <JournalEntryDetails entry={entry} />
+                    <JournalEntryDetails entry={entry} onUpdate={handleUpdateDetails} />
                   </TableCell>
                 </TableRow>
               )}
@@ -171,6 +228,13 @@ export function JournalTable() {
           ))}
         </TableBody>
       </Table>
+      {(editingEntry || isAddingNew) && (
+        <EntryCard
+          entry={editingEntry}
+          onSave={handleSave}
+          onClose={handleClose}
+        />
+      )}
     </div>
   )
 }

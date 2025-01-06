@@ -1,3 +1,14 @@
+[01/06/2025] V0 Agent:
+- Changed behavior of the edit button to open a card that takes focus of the screen. Same behavior applied for Add New Entry.
+- Added a new Save Changes button to the entry dropdown in the Journal View table.
+- Submitting to UI Designer Agent for feedback.
+
+UI Agent:
+- Bell button on the top right corner now shows the number of notifications.
+- Bottom left search bar should search in all functions (Journal, Weekly One Pager, Trades).
+- Add a reset button to reset all filters in one click.
+- Implement lazy loading or pagination for the journal table to handle large datasets efficiently.
+
 [01/03/2025] V0 Agent and UI Agent:
 - V0 Agent provided a table based layout instead of a card based layout.
 - UI Agent reccomended:

@@ -1,21 +1,38 @@
 - Determine the preferred UI design style (e.g., card-based layouts) through mockups and feedback.
--- Fix UI clicking issue.
--- Send to Designer agent to acquire inputs on improvements.
+-- Add reset button to reset all filters in one click.
+-- Add tooltips to the Direction and Sentiment fields during the add new entry flow.
+-- Create the Timeline sidepanel. Ask for mockup from the UI Agent.
 -- Missing a Settings page to setup tags and strategies. Also easy setup at the journal page.
+-- Make a summary of all buttons and flows.
 
 - Data Model Design
 -- Think through what an entry needs. Status of Retro? Result of Retro?
 
-+ Create a Restrospective Function.
+
+To add:
+---UI---
+//Journal View//
+- When clicking on the eye icon, show a panel on the right side that shows the timeline of all comments for all timeframes. See Journal_Entry_On_Click-Sidebar.png
+- Add a pop-up panel when the user clicks the Complete Retrospective button.
+- Add shortcuts to Settings where applicable (Governing Pattern, Timeframe, etc.) when possible.
+- Ensure the design adapts smoothly to smaller screen sizes, such as tablets or mobile devices, by stacking elements or enabling collapsible menus.
+- Implement lazy loading or pagination for the journal table to handle large datasets efficiently.
+
+++Testing++
+- Test that the retrospective reminder dissappears when the retrospective is completed.
+- Test searching capabilities.
+- Test that the notifications icon shows the number of notifications.
+- Tooltips show data.
+
+//Main Layout//
+- Change the bottom search bar to be able to search in all functions. When you search for a ticker, it shows a table with info from Journal, Weekly One Pager, Trades, etc.
+
+---Operations---
+//Create a Restrospective Function//
 -- Retrospective is its own function with several responsabilities. Have a PM assigned to it.
 -- Retrospective can be a process that asks if pattern played ut, if direction or sentiment were right and if the Strategy was followed (for trades, not journal entries).
 -- Automation as a setting. You can specify rules that automate the retrospective process, like determining if it was a win or not.
 -- Chart analysis of Journal entries. A chart that puts the ticker price performance over time on the background, and overlays your direction and sentiment to determine how right you were.
-
-+ UI Improvements
--- When you click on an entry, a panel opens on the right side showing a timeline of all comments for all timeframes. based on the week selected. See Journal_Entry_On_Click-Sidebar.png
---- If using the table view layout, then when you click the eye icon, it should open panel on the right side.
-
 
 MVP Implementation (Phase 1):
 Focus on core journal entry creation and daily updates. #TODO
