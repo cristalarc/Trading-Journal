@@ -1,7 +1,4 @@
 - Determine the preferred UI design style (e.g., card-based layouts) through mockups and feedback.
--- Add reset button to reset all filters in one click.
--- Add tooltips to the Direction and Sentiment fields during the add new entry flow.
--- Create the Timeline sidepanel. Ask for mockup from the UI Agent.
 -- Missing a Settings page to setup tags and strategies. Also easy setup at the journal page.
 -- Make a summary of all buttons and flows.
 

@@ -1,3 +1,31 @@
+[02/10/2025] V0 Agent:
+- Created the Settings page.
+- Created the Sidepanel and Time Table. A panel that shows the timeline of all comments for all timeframes of an specific stock.
+New UI Feature: Sidepanel with Time Table
+Overview
+When a user clicks the eye icon on any row in the Journal Entries table, a Sidepanel will slide in from the right side of the screen.
+The Sidepanel will be full height and half the width of the screen.
+Its purpose is to display a Time Table that aggregates all comments related to that stock for a specific week.
+Time Table Structure
+The Time Table inside the Sidepanel will have three columns, each displaying comments grouped by timeframe:
+
+Left Column (Weekly Comments)
+
+This column shows all comments from Weekly timeframe entries for the selected stock in the chosen week.
+These are higher-level insights or summaries for the week.
+Middle Column (Daily Comments)
+
+This column contains all Daily timeframe comments for the same stock and week.
+Since there can be up to 5 daily comments in a week, they should be stacked vertically.
+Right Column (Hourly Comments)
+
+This column displays Hourly timeframe comments, stacked similarly.
+There can be multiple comments per day, so the list may be longer.
+Behavior & Interaction
+Expandable Cards: Each comment should be inside a clickable card, allowing users to expand them for better readability.
+Navigation: The user should be able to scroll within each column independently.
+Visual Hierarchy: Weekly comments should be larger/more prominent, while Daily and Hourly should be more compact.
+
 [01/06/2025] V0 Agent:
 - Changed behavior of the edit button to open a card that takes focus of the screen. Same behavior applied for Add New Entry.
 - Added a new Save Changes button to the entry dropdown in the Journal View table.
@@ -7,7 +35,7 @@ UI Agent:
 - Bell button on the top right corner now shows the number of notifications.
 - Bottom left search bar should search in all functions (Journal, Weekly One Pager, Trades).
 - Add a reset button to reset all filters in one click.
-- Implement lazy loading or pagination for the journal table to handle large datasets efficiently.
+- Implement lazy loading or pagination for the journal table to hanle large datasets efficiently.
 
 [01/03/2025] V0 Agent and UI Agent:
 - V0 Agent provided a table based layout instead of a card based layout.

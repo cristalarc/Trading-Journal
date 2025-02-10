@@ -1,5 +1,5 @@
 import Link from "next/link"
-import { BookOpen, BarChart2, FileText, Search } from 'lucide-react'
+import { BookOpen, BarChart2, FileText, Search, Settings } from "lucide-react"
 
 export function Sidebar() {
   return (
@@ -17,6 +17,10 @@ export function Sidebar() {
         <Link href="/analytics" className="flex items-center space-x-2 text-gray-700 hover:text-gray-900">
           <BarChart2 size={20} />
           <span>Analytics</span>
+        </Link>
+        <Link href="/settings" className="flex items-center space-x-2 text-gray-700 hover:text-gray-900">
+          <Settings size={20} />
+          <span>Settings</span>
         </Link>
       </nav>
       <div className="mt-auto">

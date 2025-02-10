@@ -1,13 +1,14 @@
-'use client'
+"use client"
 
-import * as React from 'react'
-import { useState } from 'react'
-import { ChevronDown, ChevronRight, Edit, Eye, HelpCircle, Settings } from 'lucide-react'
+import * as React from "react"
+import { useState } from "react"
+import { ChevronDown, ChevronRight, Edit, Eye, HelpCircle, Settings } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
-import { JournalEntryDetails } from './journal-entry-details'
-import { EntryCard } from './entry-card'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/table"
+import { JournalEntryDetails } from "./journal-entry-details"
+import { EntryCard } from "./entry-card"
+import { Sidepanel } from "./sidepanel"
 
 type Entry = {
   id: string
@@ -15,20 +16,71 @@ type Entry = {
   ticker: string
   price: number
   timeframe: string
-  direction: 'bullish' | 'bearish'
-  sentiment: 'positive' | 'negative' | 'neutral'
+  direction: "bullish" | "bearish"
+  sentiment: "positive" | "negative" | "neutral"
   pattern: string
   support: number
   resistance: number
-  retro7d: 'pending' | 'completed' | 'overdue'
-  retro30d: 'pending' | 'completed' | 'overdue'
+  retro7d: "pending" | "completed" | "overdue"
+  retro30d: "pending" | "completed" | "overdue"
   comments?: string
 }
 
 const dummyData: Entry[] = [
-  { id: '1', date: '2023-06-15', ticker: 'AAPL', price: 150.25, timeframe: 'Daily', direction: 'bullish', sentiment: 'positive', pattern: 'Cup and Handle', support: 148.50, resistance: 152.00, retro7d: 'completed', retro30d: 'pending' },
-  { id: '2', date: '2023-06-14', ticker: 'GOOGL', price: 2500.75, timeframe: 'Weekly', direction: 'bearish', sentiment: 'negative', pattern: 'Head and Shoulders', support: 2450.00, resistance: 2550.00, retro7d: 'pending', retro30d: 'pending' },
-  { id: '3', date: '2023-06-13', ticker: 'TSLA', price: 750.50, timeframe: 'Hourly', direction: 'bullish', sentiment: 'neutral', pattern: 'Flag', support: 745.00, resistance: 755.00, retro7d: 'overdue', retro30d: 'pending' },
+  {
+    id: "1",
+    date: "2023-06-15",
+    ticker: "AAPL",
+    price: 150.25,
+    timeframe: "Daily",
+    direction: "bullish",
+    sentiment: "positive",
+    pattern: "Cup and Handle",
+    support: 148.5,
+    resistance: 152.0,
+    retro7d: "completed",
+    retro30d: "pending",
+    comments: "Strong upward trend observed.",
+  },
+  {
+    id: "2",
+    date: "2023-06-14",
+    ticker: "GOOGL",
+    price: 2500.75,
+    timeframe: "Weekly",
+    direction: "bearish",
+    sentiment: "negative",
+    pattern: "Head and Shoulders",
+    support: 2450.0,
+    resistance: 2550.0,
+    retro7d: "pending",
+    retro30d: "pending",
+    comments: "Potential reversal pattern forming.",
+  },
+  {
+    id: "3",
+    date: "2023-06-13",
+    ticker: "TSLA",
+    price: 750.5,
+    timeframe: "Hourly",
+    direction: "bullish",
+    sentiment: "neutral",
+    pattern: "Flag",
+    support: 745.0,
+    resistance: 755.0,
+    retro7d: "overdue",
+    retro30d: "pending",
+    comments: "Consolidation before potential breakout.",
+  },
+]
+
+// Dummy comments for the Sidepanel
+const dummyComments = [
+  { id: "1", date: "2023-06-15", timeframe: "Weekly", comment: "AAPL showing strong momentum this week." },
+  { id: "2", date: "2023-06-15", timeframe: "Daily", comment: "AAPL broke through resistance at $150." },
+  { id: "3", date: "2023-06-15", timeframe: "Hourly", comment: "AAPL consolidating after morning rally." },
+  { id: "4", date: "2023-06-14", timeframe: "Daily", comment: "AAPL holding above support level." },
+  { id: "5", date: "2023-06-14", timeframe: "Hourly", comment: "AAPL showing increased volume in afternoon trading." },
 ]
 
 export function JournalTable() {
@@ -36,21 +88,23 @@ export function JournalTable() {
   const [entries, setEntries] = useState<Entry[]>(dummyData)
   const [editingEntry, setEditingEntry] = useState<Entry | null>(null)
   const [isAddingNew, setIsAddingNew] = useState(false)
+  const [sidepanelOpen, setSidepanelOpen] = useState(false)
+  const [selectedTicker, setSelectedTicker] = useState<string>("")
 
   const toggleRow = (id: string) => {
     setExpandedRow(expandedRow === id ? null : id)
   }
 
-  const getRetroStatus = (status: 'pending' | 'completed' | 'overdue') => {
+  const getRetroStatus = (status: "pending" | "completed" | "overdue") => {
     switch (status) {
-      case 'pending':
-        return 'bg-yellow-200 text-yellow-800'
-      case 'completed':
-        return 'bg-green-200 text-green-800'
-      case 'overdue':
-        return 'bg-red-200 text-red-800'
+      case "pending":
+        return "bg-yellow-200 text-yellow-800"
+      case "completed":
+        return "bg-green-200 text-green-800"
+      case "overdue":
+        return "bg-red-200 text-red-800"
       default:
-        return ''
+        return ""
     }
   }
 
@@ -67,7 +121,7 @@ export function JournalTable() {
       setEntries([updatedEntry, ...entries])
       setIsAddingNew(false)
     } else {
-      setEntries(entries.map(entry => entry.id === updatedEntry.id ? updatedEntry : entry))
+      setEntries(entries.map((entry) => (entry.id === updatedEntry.id ? updatedEntry : entry)))
       setEditingEntry(null)
     }
   }
@@ -78,7 +132,12 @@ export function JournalTable() {
   }
 
   const handleUpdateDetails = (updatedEntry: Entry) => {
-    setEntries(entries.map(entry => entry.id === updatedEntry.id ? updatedEntry : entry))
+    setEntries(entries.map((entry) => (entry.id === updatedEntry.id ? updatedEntry : entry)))
+  }
+
+  const handleViewTimeTable = (ticker: string) => {
+    setSelectedTicker(ticker)
+    setSidepanelOpen(true)
   }
 
   return (
@@ -212,8 +271,12 @@ export function JournalTable() {
                 </TableCell>
                 <TableCell>
                   <div className="flex space-x-2">
-                    <Button variant="ghost" size="sm" onClick={() => handleEdit(entry)}><Edit size={16} /></Button>
-                    <Button variant="ghost" size="sm"><Eye size={16} /></Button>
+                    <Button variant="ghost" size="sm" onClick={() => handleEdit(entry)}>
+                      <Edit size={16} />
+                    </Button>
+                    <Button variant="ghost" size="sm" onClick={() => handleViewTimeTable(entry.ticker)}>
+                      <Eye size={16} />
+                    </Button>
                   </div>
                 </TableCell>
               </TableRow>
@@ -228,13 +291,13 @@ export function JournalTable() {
           ))}
         </TableBody>
       </Table>
-      {(editingEntry || isAddingNew) && (
-        <EntryCard
-          entry={editingEntry}
-          onSave={handleSave}
-          onClose={handleClose}
-        />
-      )}
+      {(editingEntry || isAddingNew) && <EntryCard entry={editingEntry} onSave={handleSave} onClose={handleClose} />}
+      <Sidepanel
+        isOpen={sidepanelOpen}
+        onClose={() => setSidepanelOpen(false)}
+        ticker={selectedTicker}
+        comments={dummyComments}
+      />
     </div>
   )
 }
