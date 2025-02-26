@@ -1,6 +1,13 @@
-- Determine the preferred UI design style (e.g., card-based layouts) through mockups and feedback.
--- Missing a Settings page to setup tags and strategies. Also easy setup at the journal page.
--- Make a summary of all buttons and flows.
+Run app and confirm functionality and missing UI features.
+
+Implement actual data persistence (database integration)
+Add form validation and submission handling
+Implement authentication for user accounts
+Add more advanced filtering and search capabilities
+Create the weekly one-pager view
+Implement notifications for retrospective reminders
+The current structure provides a solid foundation that follows the requirements in the product manager output and can be extended as needed.
+
 
 - Data Model Design
 -- Think through what an entry needs. Status of Retro? Result of Retro?
@@ -14,6 +21,7 @@ To add:
 - Add shortcuts to Settings where applicable (Governing Pattern, Timeframe, etc.) when possible.
 - Ensure the design adapts smoothly to smaller screen sizes, such as tablets or mobile devices, by stacking elements or enabling collapsible menus.
 - Implement lazy loading or pagination for the journal table to handle large datasets efficiently.
+- Add easy creation of new Setup attributes in the Journal page.
 
 ++Testing++
 - Test that the retrospective reminder dissappears when the retrospective is completed.

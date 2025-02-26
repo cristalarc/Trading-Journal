@@ -1,0 +1,26 @@
+Trading Journal App/
+├── app/                      # Next.js app directory
+│   ├── api/                  # API routes
+│   │   └── journal/          # Journal entry API endpoints
+│   ├── analysis/             # Analysis page
+│   ├── journal/              # Journal pages
+│   │   ├── [id]/             # Journal entry detail page
+│   │   └── new/              # New journal entry form
+│   ├── types/                # TypeScript type definitions
+│   ├── globals.css           # Global CSS styles
+│   ├── layout.tsx            # Root layout component
+│   └── page.tsx              # Home page
+├── components/               # Reusable components
+│   ├── navigation.tsx        # Navigation sidebar
+│   └── theme-provider.tsx    # Theme provider for dark/light mode
+├── lib/                      # Utility functions
+│   └── utils.ts              # General utility functions
+├── public/                   # Static assets
+├── .gitignore                # Git ignore file
+├── components.json           # shadcn/ui configuration
+├── next.config.mjs           # Next.js configuration
+├── package.json              # Project dependencies
+├── postcss.config.mjs        # PostCSS configuration
+├── README.md                 # Project documentation
+├── tailwind.config.ts        # Tailwind CSS configuration
+└── tsconfig.json             # TypeScript configuration
