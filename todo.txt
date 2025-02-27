@@ -1,4 +1,6 @@
 Run app and confirm functionality and missing UI features.
+- The edit button should also allow to change all other fields of the entry.
+- Comment the files and add logger. starting with the active files.
 
 Implement actual data persistence (database integration)
 Add form validation and submission handling
@@ -12,7 +14,6 @@ The current structure provides a solid foundation that follows the requirements 
 - Data Model Design
 -- Think through what an entry needs. Status of Retro? Result of Retro?
 
-
 To add:
 ---UI---
 //Journal View//
@@ -22,6 +23,7 @@ To add:
 - Ensure the design adapts smoothly to smaller screen sizes, such as tablets or mobile devices, by stacking elements or enabling collapsible menus.
 - Implement lazy loading or pagination for the journal table to handle large datasets efficiently.
 - Add easy creation of new Setup attributes in the Journal page.
+- Find where to place the retrospective hub. (likely in analytics?)
 
 ++Testing++
 - Test that the retrospective reminder dissappears when the retrospective is completed.

@@ -1,4 +1,7 @@
+"use client";
+
 import Link from "next/link";
+import { Calendar } from "lucide-react";
 
 export default function NewJournalEntryPage() {
   return (
@@ -15,6 +18,23 @@ export default function NewJournalEntryPage() {
       
       <div className="bg-card p-6 rounded-lg shadow-sm border">
         <form className="space-y-6">
+          {/* Date Field */}
+          <div className="space-y-2">
+            <label htmlFor="entryDate" className="text-sm font-medium">
+              Entry Date
+            </label>
+            <div className="relative">
+              <input
+                id="entryDate"
+                name="entryDate"
+                type="date"
+                className="w-full p-2 border rounded-md bg-background pr-10"
+                required
+              />
+              <Calendar className="absolute right-3 top-2.5 h-5 w-5 text-gray-400" />
+            </div>
+          </div>
+          
           {/* Ticker and Price */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-2">
@@ -25,7 +45,7 @@ export default function NewJournalEntryPage() {
                 id="ticker"
                 name="ticker"
                 type="text"
-                className="w-full p-2 border rounded-md"
+                className="w-full p-2 border rounded-md bg-background"
                 placeholder="e.g. AAPL"
                 required
               />
@@ -39,7 +59,7 @@ export default function NewJournalEntryPage() {
                 name="currentPrice"
                 type="number"
                 step="0.01"
-                className="w-full p-2 border rounded-md"
+                className="w-full p-2 border rounded-md bg-background"
                 placeholder="e.g. 150.25"
                 required
               />
@@ -55,7 +75,7 @@ export default function NewJournalEntryPage() {
               <select
                 id="timeframe"
                 name="timeframe"
-                className="w-full p-2 border rounded-md"
+                className="w-full p-2 border rounded-md bg-background"
                 required
               >
                 <option value="">Select Timeframe</option>
@@ -71,7 +91,7 @@ export default function NewJournalEntryPage() {
               <select
                 id="direction"
                 name="direction"
-                className="w-full p-2 border rounded-md"
+                className="w-full p-2 border rounded-md bg-background"
                 required
               >
                 <option value="">Select Direction</option>
@@ -86,7 +106,7 @@ export default function NewJournalEntryPage() {
               <select
                 id="sentiment"
                 name="sentiment"
-                className="w-full p-2 border rounded-md"
+                className="w-full p-2 border rounded-md bg-background"
                 required
               >
                 <option value="">Select Sentiment</option>
@@ -105,7 +125,7 @@ export default function NewJournalEntryPage() {
               <select
                 id="sentimentType"
                 name="sentimentType"
-                className="w-full p-2 border rounded-md"
+                className="w-full p-2 border rounded-md bg-background"
                 required
               >
                 <option value="">Select Sentiment Type</option>
@@ -121,7 +141,7 @@ export default function NewJournalEntryPage() {
                 id="governingPattern"
                 name="governingPattern"
                 type="text"
-                className="w-full p-2 border rounded-md"
+                className="w-full p-2 border rounded-md bg-background"
                 placeholder="e.g. Cup & Handle"
               />
             </div>
@@ -138,7 +158,7 @@ export default function NewJournalEntryPage() {
                 name="keySupportLevel"
                 type="number"
                 step="0.01"
-                className="w-full p-2 border rounded-md"
+                className="w-full p-2 border rounded-md bg-background"
                 placeholder="e.g. 145.50"
               />
             </div>
@@ -151,7 +171,7 @@ export default function NewJournalEntryPage() {
                 name="keyResistanceLevel"
                 type="number"
                 step="0.01"
-                className="w-full p-2 border rounded-md"
+                className="w-full p-2 border rounded-md bg-background"
                 placeholder="e.g. 155.75"
               />
             </div>
@@ -166,7 +186,7 @@ export default function NewJournalEntryPage() {
               id="comments"
               name="comments"
               rows={4}
-              className="w-full p-2 border rounded-md"
+              className="w-full p-2 border rounded-md bg-background"
               placeholder="Enter your analysis and thoughts..."
               required
             ></textarea>

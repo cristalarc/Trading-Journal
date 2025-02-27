@@ -1,0 +1,19 @@
+This file contains a list of features that are planned for the app.
+
+Summary of features:
+
+- Multi-Timeframe View: Resides in the Journal Layout, the Multi-Timeframe View allows the user to see all comments for a specific stock for a specific week. This is assisted by the Time Table, which is a table that shows the timeline of all comments for all timeframes of an specific stock.
+- Retrospectives Page
+
+
+///Journal View///
+The Journal View is the main page of the Journal Layout. The Journal works as a Journal Entry based, the user constantly adds entries which are then grouped in ways to portray the picture of the stock. 
+It contains the following components:
+- Journal Filters: Resides in the Journal Layout, the Journal Filters allows the user to filter and navigate through the comments for a specific stock for a specific week.
+- Journal Table: Resides in the Journal Layout, the Journal Table allows the user to see all the Journal Entires in a table format, allowing the user to manipulate the data, filter it, etc.
+- Journal Entry Interface: Resides in the Journal Layout, the Journal Entry Interface allows the user to add a new journal entry for a specific stock.
+- Retrospective Alert: Resides in the Journal Layout, the Retrospective Alerts allows the user to set alerts for specific stocks and timeframes.
+- Time Table Side Panel: Resides in the Journal Layout, the Sidepanel allows the user to see all comments for a specific stock for a specific week. This is assisted by the Time Table, which is a table that shows the timeline of all comments for all timeframes of an specific stock.
+
+///Analytics Dashboard///
+///Weekly One Pager///
