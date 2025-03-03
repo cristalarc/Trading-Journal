@@ -1,6 +1,6 @@
 Run app and confirm functionality and missing UI features.
-- The edit button should also allow to change all other fields of the entry.
-- Comment the files and add logger. starting with the active files.
+- Comment the files, provide docstrings and add logger. starting with the active files.
+- Remove mock data when databases are connected.
 
 Implement actual data persistence (database integration)
 Add form validation and submission handling
@@ -24,6 +24,9 @@ To add:
 - Implement lazy loading or pagination for the journal table to handle large datasets efficiently.
 - Add easy creation of new Setup attributes in the Journal page.
 - Find where to place the retrospective hub. (likely in analytics?)
+- When you click on a Ticker in the Journal Table, it efectively works as a filter by Ticker.
+- Price is fetched automatically once the ticker is selected. If price can't be fetched, ask user to supply it.
+- ADD THIS TO THE NEW UI. Change the bottom search bar to be able to search in all functions. When you search for a ticker, it shows a table with info from Journal, Weekly One Pager, Trades, etc.
 
 ++Testing++
 - Test that the retrospective reminder dissappears when the retrospective is completed.
@@ -31,8 +34,12 @@ To add:
 - Test that the notifications icon shows the number of notifications.
 - Tooltips show data.
 
-//Main Layout//
-- Change the bottom search bar to be able to search in all functions. When you search for a ticker, it shows a table with info from Journal, Weekly One Pager, Trades, etc.
+---Database---
+- Create a database for Settings. Includes Patterns, Strategies, Timeframes, Tooltips. 
+
+
+
+
 
 ---Operations---
 //Create a Restrospective Function//

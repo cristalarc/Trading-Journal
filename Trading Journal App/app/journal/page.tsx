@@ -13,12 +13,30 @@ import {
   Filter, 
   Plus, 
   Save, 
-  X 
+  X,
+  Settings,
+  HelpCircle
 } from "lucide-react";
 import { TimeTablePanel } from "@/components/time-table-panel";
 import { RetrospectiveReminder } from "@/components/retrospective-reminder";
+import { createLogger } from "@/lib/logger";
 
+const logger = createLogger('JournalPage');
+
+/**
+ * JournalPage Component
+ * 
+ * Main page for displaying and managing trading journal entries.
+ * Features:
+ * - Displays a table of journal entries with expandable rows
+ * - Provides inline editing of entries
+ * - Includes filters for timeframes and other criteria
+ * - Shows retrospective reminders
+ * - Integrates with settings for patterns, timeframes, and tooltips
+ */
 export default function JournalPage() {
+  logger.debug('Initializing JournalPage component');
+
   const router = useRouter();
   const [showSidePanel, setShowSidePanel] = useState(false);
   const [selectedEntryId, setSelectedEntryId] = useState<string | null>(null);
@@ -113,29 +131,74 @@ export default function JournalPage() {
     entry => entry.retrospective7D === "pending" || entry.retrospective30D === "pending"
   ).length;
 
+  // Mock data for patterns (this would come from settings in the real app)
+  const availablePatterns = [
+    "Cup & Handle",
+    "Head & Shoulders",
+    "Double Bottom",
+    "Double Top",
+    "Ascending Triangle",
+    "Descending Triangle",
+    "Flag",
+    "Pennant",
+    "Breakout",
+  ];
+
+  // Mock tooltip text (this would come from settings in the real app)
+  const tooltips = {
+    direction: "Direction indicates whether you expect the price to go up (Bullish) or down (Bearish)",
+    sentiment: "Sentiment reflects your overall feeling about the trade based on your analysis"
+  };
+
+  /**
+   * Handles timeframe filter selection
+   * Toggles the selected timeframe or clears it if already selected
+   */
   const handleTimeframeFilter = (timeframe: string) => {
+    logger.debug('Handling timeframe filter change', { timeframe });
     setSelectedTimeframe(timeframe === selectedTimeframe ? null : timeframe);
   };
 
+  /**
+   * Resets all filters to their default state
+   */
   const resetFilters = () => {
+    logger.info('Resetting all filters');
     setSelectedTimeframe(null);
   };
 
+  /**
+   * Opens the side panel to view details for a specific entry
+   */
   const handleViewDetails = (id: string) => {
+    logger.debug('Opening side panel for entry', { entryId: id });
     setSelectedEntryId(id);
     setShowSidePanel(true);
   };
 
+  /**
+   * Closes the side panel and clears the selected entry
+   */
   const closeSidePanel = () => {
+    logger.debug('Closing side panel');
     setShowSidePanel(false);
     setSelectedEntryId(null);
   };
 
+  /**
+   * Navigates to the retrospectives page
+   */
   const handleCompleteRetrospective = () => {
+    logger.info('Navigating to retrospectives page');
     router.push("/journal/retrospectives");
   };
 
+  /**
+   * Toggles the expansion state of a table row
+   * If the row is expanded, it will be collapsed and vice versa
+   */
   const toggleRowExpansion = (entryId: string) => {
+    logger.debug('Toggling row expansion', { entryId });
     setExpandedRows(prev => 
       prev.includes(entryId) 
         ? prev.filter(id => id !== entryId) 
@@ -143,21 +206,42 @@ export default function JournalPage() {
     );
   };
 
+  /**
+   * Toggles the editing state of a table row
+   * Only one row can be edited at a time
+   * Automatically expands the row when editing is enabled
+   */
   const toggleRowEditing = (entryId: string) => {
+    logger.debug('Toggling row editing', { entryId });
+    
     if (editingRows.includes(entryId)) {
       // Save changes
+      logger.info('Saving changes for entry', { entryId });
       setEditingRows(prev => prev.filter(id => id !== entryId));
     } else {
-      // Start editing
-      setEditingRows(prev => [...prev, entryId]);
+      // Start editing and ensure row is expanded
+      logger.info('Starting edit mode for entry', { entryId });
+      setEditingRows([entryId]); // Only allow one row to be edited at a time
+      if (!expandedRows.includes(entryId)) {
+        setExpandedRows(prev => [...prev, entryId]);
+      }
     }
   };
 
+  // Filter entries based on selected criteria
   const filteredEntries = journalEntries.filter(entry => {
     if (selectedTimeframe && entry.timeframe !== selectedTimeframe) {
       return false;
     }
     return true;
+  });
+
+  logger.info('Rendering journal page', { 
+    entriesCount: filteredEntries.length,
+    overdueRetrospectives,
+    activeFilters: {
+      timeframe: selectedTimeframe
+    }
   });
 
   return (
@@ -303,10 +387,44 @@ export default function JournalPage() {
                 <th className="p-3 text-left text-sm font-medium">Date</th>
                 <th className="p-3 text-left text-sm font-medium">Ticker</th>
                 <th className="p-3 text-left text-sm font-medium">Price</th>
-                <th className="p-3 text-left text-sm font-medium">Timeframe</th>
-                <th className="p-3 text-left text-sm font-medium">Direction</th>
-                <th className="p-3 text-left text-sm font-medium">Sentiment</th>
-                <th className="p-3 text-left text-sm font-medium">Pattern</th>
+                <th className="p-3 text-left text-sm font-medium relative">
+                  <div className="flex items-center">
+                    Timeframe
+                    <Link href="/settings/timeframes" className="ml-1">
+                      <Settings className="h-4 w-4 text-muted-foreground hover:text-primary" />
+                    </Link>
+                  </div>
+                </th>
+                <th className="p-3 text-left text-sm font-medium relative">
+                  <div className="flex items-center">
+                    Direction
+                    <div className="group relative ml-1">
+                      <HelpCircle className="h-4 w-4 text-muted-foreground" />
+                      <div className="absolute left-0 top-6 scale-0 transition-all rounded bg-popover p-2 text-xs text-popover-foreground group-hover:scale-100 w-48 z-50 shadow-sm">
+                        {tooltips.direction}
+                      </div>
+                    </div>
+                  </div>
+                </th>
+                <th className="p-3 text-left text-sm font-medium relative">
+                  <div className="flex items-center">
+                    Sentiment
+                    <div className="group relative ml-1">
+                      <HelpCircle className="h-4 w-4 text-muted-foreground" />
+                      <div className="absolute left-0 top-6 scale-0 transition-all rounded bg-popover p-2 text-xs text-popover-foreground group-hover:scale-100 w-48 z-50 shadow-sm">
+                        {tooltips.sentiment}
+                      </div>
+                    </div>
+                  </div>
+                </th>
+                <th className="p-3 text-left text-sm font-medium relative">
+                  <div className="flex items-center">
+                    Pattern
+                    <Link href="/settings/patterns" className="ml-1">
+                      <Settings className="h-4 w-4 text-muted-foreground hover:text-primary" />
+                    </Link>
+                  </div>
+                </th>
                 <th className="p-3 text-left text-sm font-medium">7D</th>
                 <th className="p-3 text-left text-sm font-medium">30D</th>
                 <th className="p-3 text-left text-sm font-medium">Actions</th>
@@ -329,24 +447,97 @@ export default function JournalPage() {
                       </button>
                     </td>
                     <td className="p-3 text-sm">{entry.date}</td>
-                    <td className="p-3 text-sm font-medium">{entry.ticker}</td>
-                    <td className="p-3 text-sm">${entry.price.toFixed(2)}</td>
-                    <td className="p-3 text-sm">{entry.timeframe}</td>
-                    <td className="p-3 text-sm">{entry.direction}</td>
-                    <td className="p-3 text-sm">
-                      <span
-                        className={`inline-block px-2 py-1 rounded-full text-xs ${
-                          entry.sentiment === "Bullish"
-                            ? "bg-green-100 text-green-800"
-                            : entry.sentiment === "Bearish"
-                            ? "bg-red-100 text-red-800"
-                            : "bg-yellow-100 text-yellow-800"
-                        }`}
-                      >
-                        {entry.sentiment}
-                      </span>
+                    <td className="p-3 text-sm font-medium">
+                      {editingRows.includes(entry.id) ? (
+                        <input
+                          type="text"
+                          defaultValue={entry.ticker}
+                          className="w-full p-1 text-sm border rounded bg-background"
+                        />
+                      ) : (
+                        entry.ticker
+                      )}
                     </td>
-                    <td className="p-3 text-sm">{entry.pattern}</td>
+                    <td className="p-3 text-sm">
+                      {editingRows.includes(entry.id) ? (
+                        <input
+                          type="number"
+                          defaultValue={entry.price}
+                          step="0.01"
+                          className="w-full p-1 text-sm border rounded bg-background"
+                        />
+                      ) : (
+                        `$${entry.price.toFixed(2)}`
+                      )}
+                    </td>
+                    <td className="p-3 text-sm">
+                      {editingRows.includes(entry.id) ? (
+                        <select
+                          defaultValue={entry.timeframe}
+                          className="w-full p-1 text-sm border rounded bg-background"
+                        >
+                          <option value="Hourly">Hourly</option>
+                          <option value="Daily">Daily</option>
+                          <option value="Weekly">Weekly</option>
+                          <option value="Monthly">Monthly</option>
+                        </select>
+                      ) : (
+                        entry.timeframe
+                      )}
+                    </td>
+                    <td className="p-3 text-sm">
+                      {editingRows.includes(entry.id) ? (
+                        <select
+                          defaultValue={entry.direction}
+                          className="w-full p-1 text-sm border rounded bg-background"
+                        >
+                          <option value="Bullish">Bullish</option>
+                          <option value="Bearish">Bearish</option>
+                        </select>
+                      ) : (
+                        entry.direction
+                      )}
+                    </td>
+                    <td className="p-3 text-sm">
+                      {editingRows.includes(entry.id) ? (
+                        <select
+                          defaultValue={entry.sentiment}
+                          className="w-full p-1 text-sm border rounded bg-background"
+                        >
+                          <option value="Bullish">Bullish</option>
+                          <option value="Neutral">Neutral</option>
+                          <option value="Bearish">Bearish</option>
+                        </select>
+                      ) : (
+                        <span
+                          className={`inline-block px-2 py-1 rounded-full text-xs ${
+                            entry.sentiment === "Bullish"
+                              ? "bg-green-100 text-green-800"
+                              : entry.sentiment === "Bearish"
+                              ? "bg-red-100 text-red-800"
+                              : "bg-yellow-100 text-yellow-800"
+                          }`}
+                        >
+                          {entry.sentiment}
+                        </span>
+                      )}
+                    </td>
+                    <td className="p-3 text-sm">
+                      {editingRows.includes(entry.id) ? (
+                        <select
+                          defaultValue={entry.pattern}
+                          className="w-full p-1 text-sm border rounded bg-background"
+                        >
+                          {availablePatterns.map(pattern => (
+                            <option key={pattern} value={pattern}>
+                              {pattern}
+                            </option>
+                          ))}
+                        </select>
+                      ) : (
+                        entry.pattern
+                      )}
+                    </td>
                     <td className="p-3 text-sm">
                       <span
                         className={`inline-block w-3 h-3 rounded-full ${

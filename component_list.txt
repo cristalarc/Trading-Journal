@@ -15,5 +15,13 @@ It contains the following components:
 - Retrospective Alert: Resides in the Journal Layout, the Retrospective Alerts allows the user to set alerts for specific stocks and timeframes.
 - Time Table Side Panel: Resides in the Journal Layout, the Sidepanel allows the user to see all comments for a specific stock for a specific week. This is assisted by the Time Table, which is a table that shows the timeline of all comments for all timeframes of an specific stock.
 
+
+/// Settings View///
+The settings View allows the user to configure necessary settings for the correct functionality of the app, i.e. patterns, timeframes, strategies, etc.
+- Pattern Edit Window: this window allows the edit or creation of patterns to be used in the journal.
+- Timeframe Edit Window: this window allows the edit or creation of timeframes to be used in the journal.
+- Direction Tooltip Setting: Freeform text that shows when the Direction Tooltip is hovered.
+- Sentiment Tooltip Setting: Freeform text that shows when the Sentiment Tooltip is hovered.
+
 ///Analytics Dashboard///
 ///Weekly One Pager///
