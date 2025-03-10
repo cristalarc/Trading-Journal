@@ -1,5 +1,4 @@
 Run app and confirm functionality and missing UI features.
-- Comment the files, provide docstrings and add logger. starting with the active files.
 - Remove mock data when databases are connected.
 
 Implement actual data persistence (database integration)
@@ -36,6 +35,7 @@ To add:
 
 ---Database---
 - Create a database for Settings. Includes Patterns, Strategies, Timeframes, Tooltips. 
+- Add db backuping
 
 
 

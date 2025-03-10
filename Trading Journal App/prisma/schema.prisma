@@ -1,0 +1,106 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Configuration Tables
+model TimeframeConfig {
+  id            String        @id @default(uuid())
+  name          String        @db.VarChar(50)
+  displayOrder  Int
+  isActive      Boolean       @default(true)
+  createdAt     DateTime      @default(now()) @map("created_at")
+  updatedAt     DateTime      @updatedAt @map("updated_at")
+  journalEntries JournalEntry[]
+
+  @@map("timeframe_configs")
+}
+
+model PatternConfig {
+  id            String        @id @default(uuid())
+  name          String        @db.VarChar(100)
+  description   String?
+  displayOrder  Int
+  isActive      Boolean       @default(true)
+  createdAt     DateTime      @default(now()) @map("created_at")
+  updatedAt     DateTime      @updatedAt @map("updated_at")
+  journalEntries JournalEntry[]
+
+  @@map("pattern_configs")
+}
+
+model TooltipConfig {
+  id          String   @id @default(uuid())
+  key         String   @unique
+  text        String   @db.VarChar(200)
+  maxLength   Int      @default(50) @map("max_length")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@map("tooltip_configs")
+}
+
+// Main Journal Entries Table
+model JournalEntry {
+  id                      String        @id @default(uuid())
+  createdAt              DateTime      @default(now()) @map("created_at")
+  updatedAt              DateTime      @updatedAt @map("updated_at")
+  entryDate              DateTime      @map("entry_date")
+  ticker                 String        @db.VarChar(20)
+  price                  Decimal       @db.Decimal(10, 2)
+  timeframe              TimeframeConfig? @relation(fields: [timeframeId], references: [id])
+  timeframeId            String?       @map("timeframe_id")
+  direction              Direction
+  sentiment              Sentiment
+  pattern                PatternConfig? @relation(fields: [patternId], references: [id])
+  patternId              String?       @map("pattern_id")
+  support                Decimal?      @db.Decimal(10, 2)
+  resistance             Decimal?      @db.Decimal(10, 2)
+  comments               String?
+  isWeeklyOnePagerEligible Boolean     @default(false) @map("is_weekly_one_pager_eligible")
+  
+  // Retrospectives
+  retro7DStatus          RetroStatus   @default(pending) @map("retro_7d_status")
+  retro7DCompletedAt     DateTime?     @map("retro_7d_completed_at")
+  retro7DOutcome         RetroOutcome? @map("retro_7d_outcome")
+  retro7DNotes           String?       @map("retro_7d_notes")
+  
+  retro30DStatus         RetroStatus   @default(pending) @map("retro_30d_status")
+  retro30DCompletedAt    DateTime?     @map("retro_30d_completed_at")
+  retro30DOutcome        RetroOutcome? @map("retro_30d_outcome")
+  retro30DNotes          String?       @map("retro_30d_notes")
+
+  @@map("journal_entries")
+  @@index([entryDate])
+  @@index([ticker])
+  @@index([timeframeId])
+  @@index([patternId])
+}
+
+// Enums
+enum Direction {
+  Bullish
+  Bearish
+}
+
+enum Sentiment {
+  Bullish
+  Neutral
+  Bearish
+}
+
+enum RetroStatus {
+  pending
+  completed
+}
+
+enum RetroOutcome {
+  win
+  loss
+} 

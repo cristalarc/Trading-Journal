@@ -5,7 +5,6 @@ Summary of features:
 - Multi-Timeframe View: Resides in the Journal Layout, the Multi-Timeframe View allows the user to see all comments for a specific stock for a specific week. This is assisted by the Time Table, which is a table that shows the timeline of all comments for all timeframes of an specific stock.
 - Retrospectives Page
 
-
 ///Journal View///
 The Journal View is the main page of the Journal Layout. The Journal works as a Journal Entry based, the user constantly adds entries which are then grouped in ways to portray the picture of the stock. 
 It contains the following components:
