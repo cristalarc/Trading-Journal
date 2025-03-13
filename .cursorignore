@@ -2,7 +2,10 @@
 Project_Management_Files/
 
 # Ignore all files in the Initial Scoping Documents folder
-Initial_Scoping_Documents/
+Initial_Scoping_Docs/
+
+# Ignore all files in the ai_agents_record folder
+ai_agents_record/
 
 #Ignore specific files
 ai_agents_work_summary.txt
