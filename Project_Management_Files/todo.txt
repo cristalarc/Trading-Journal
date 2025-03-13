@@ -1,5 +1,6 @@
 Run app and confirm functionality and missing UI features.
 - Remove mock data when databases are connected.
+- Make sure that Journal entry IDs are a sensible number instead of a puzzle
 
 Implement actual data persistence (database integration)
 Add form validation and submission handling
@@ -74,3 +75,6 @@ Remember the process:
 	• For frontend you can use v0
 	• After passing docs, ask to create a file structure
 You then proceed to ask it to build the frontend, with demo data
+
+---Wrap Up---
+Update project structure
