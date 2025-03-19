@@ -1,3 +1,38 @@
+[03/19/2025]
+Fixed Database Schema & API Issues
+Fixed Prisma Schema Relation Issues: Resolved the issues with relation modeling in Prisma by properly implementing connect format for timeframe and pattern relations
+Removed Non-Existent Schema Field: Eliminated the relevantWeek property from database operations as it wasn't defined in the schema
+Enhanced Error Handling: Added more detailed error diagnostics in API responses for common Prisma errors including schema validation failures and foreign key constraint issues
+
+Improved Decimal Handling
+Added Utility Functions: Created reusable helpers in lib/utils.ts:
+formatDecimal(): Properly formats any decimal value (Prisma.Decimal, number, string)
+formatPrice(): Adds currency symbol to formatted decimal values
+Fixed Journal View Crash: Resolved the TypeError: entry.price.toFixed is not a function error by properly handling Prisma.Decimal objects
+
+Enhanced Journal Entries UI
+Fixed Date Handling: Corrected timezone issues when saving journal entries by using T12:00:00Z timestamp format to prevent dates from shifting backward by one day
+Expanded Row Functionality: Implemented the dropdown details view for journal entries showing:
+Support and resistance levels
+Sentiment
+Weekly One Pager eligibility
+Comments
+Added Inline Editing: Created an edit form within expanded rows allowing users to modify:
+Ticker
+Price
+Support and resistance levels
+Comments
+
+General Improvements
+Better User Experience: Added visual feedback when rows are expanded
+Code Quality: Added comprehensive type handling to avoid runtime errors
+Documentation: Improved code comments throughout the application
+Error Prevention: Added validation to prevent common input errors when creating new entries
+Technical Debt Addressed
+Properly handled Prisma's Decimal type conversions throughout the app
+Added robust fallback patterns for parsing and displaying numeric values
+Fixed React fragment key issues in dynamically rendered lists
+
 [03/13/2025]
 - Changed main directory of project to avoid problems.
 - Modified ignore files to help cursor better interact with the project.
