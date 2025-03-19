@@ -4,14 +4,14 @@ import { useState } from "react";
 import { AlertTriangle } from "lucide-react";
 
 interface RetrospectiveReminderProps {
-  overdueCount: number;
+  count: number;
   onComplete: () => void;
 }
 
-export function RetrospectiveReminder({ overdueCount, onComplete }: RetrospectiveReminderProps) {
+export function RetrospectiveReminder({ count, onComplete }: RetrospectiveReminderProps) {
   const [isVisible, setIsVisible] = useState(true);
 
-  if (!isVisible || overdueCount === 0) {
+  if (!isVisible || count === 0) {
     return null;
   }
 
@@ -21,11 +21,11 @@ export function RetrospectiveReminder({ overdueCount, onComplete }: Retrospectiv
         <AlertTriangle className="mr-2 h-5 w-5 text-amber-500" />
         <h2 className="font-medium">
           Retrospective Action Required
-          {overdueCount > 1 && <span className="ml-1">({overdueCount} entries)</span>}
+          {count > 1 && <span className="ml-1">({count} entries)</span>}
         </h2>
       </div>
       <p className="text-sm text-amber-700 mt-1 mb-2">
-        You have {overdueCount} {overdueCount === 1 ? 'entry' : 'entries'} that {overdueCount === 1 ? 'requires' : 'require'} a retrospective review.
+        You have {count} {count === 1 ? 'entry' : 'entries'} that {count === 1 ? 'requires' : 'require'} a retrospective review.
       </p>
       <button 
         onClick={onComplete}

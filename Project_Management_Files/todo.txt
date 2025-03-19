@@ -1,6 +1,9 @@
 Run app and confirm functionality and missing UI features.
-- Remove mock data when databases are connected.
-- Make sure that Journal entry IDs are a sensible number instead of a puzzle
+- Check UI versus V0
+- The Edit button does not allow any edits.
+- Make sure that relevant week functionality works
+- Add bulk journal clearing capabilities.
+- Connect the pattern, timeframe and tooltip dbs to the UI
 
 Implement actual data persistence (database integration)
 Add form validation and submission handling

@@ -1,60 +1,43 @@
 import { NextResponse } from "next/server";
-
-// Mock data for demonstration purposes
-// In a real application, this would be stored in a database
-const journalEntries = [
-  {
-    id: "1",
-    entryDate: new Date("2023-01-01"),
-    relevantWeek: 1,
-    ticker: "AAPL",
-    currentPrice: 150.25,
-    timeframe: "daily",
-    direction: "bullish",
-    sentiment: "bullish",
-    sentimentType: "technical",
-    governingPattern: "Cup & Handle",
-    keySupportLevel: 145.50,
-    keyResistanceLevel: 155.75,
-    comments: "Strong momentum with increasing volume",
-    weeklyOnePagerToggle: true,
-    isFollowUpToOpenTrade: false,
-    retrospective7D: "win",
-    retrospective30D: "win",
-    updates: [
-      {
-        id: "1-1",
-        journalEntryId: "1",
-        updateDate: new Date("2023-01-02"),
-        comments: "Price broke resistance as expected",
-      },
-    ],
-  },
-  {
-    id: "2",
-    entryDate: new Date("2023-01-02"),
-    relevantWeek: 1,
-    ticker: "TSLA",
-    currentPrice: 220.15,
-    timeframe: "weekly",
-    direction: "bearish",
-    sentiment: "bearish",
-    sentimentType: "technical",
-    governingPattern: "Head & Shoulders",
-    keySupportLevel: 210.00,
-    keyResistanceLevel: 230.50,
-    comments: "Potential breakdown below neckline",
-    weeklyOnePagerToggle: true,
-    isFollowUpToOpenTrade: true,
-    retrospective7D: "lose",
-    retrospective30D: "win",
-    updates: [],
-  },
-];
+import { 
+  getAllJournalEntries, 
+  createJournalEntry, 
+  getJournalEntryById,
+  updateJournalEntry,
+  deleteJournalEntry
+} from "@/lib/services/journalEntryService";
+import { calculateRelevantWeek as getRelevantWeek } from "@/lib/db";
 
 // GET handler for retrieving all journal entries
-export async function GET() {
-  return NextResponse.json(journalEntries);
+export async function GET(request: Request) {
+  try {
+    const { searchParams } = new URL(request.url);
+    
+    // Extract filter parameters
+    const timeframeId = searchParams.get('timeframeId') || undefined;
+    const patternId = searchParams.get('patternId') || undefined;
+    const ticker = searchParams.get('ticker') || undefined;
+    const direction = searchParams.get('direction') as 'Bullish' | 'Bearish' | undefined;
+    const sentiment = searchParams.get('sentiment') as 'Bullish' | 'Neutral' | 'Bearish' | undefined;
+    
+    // Get entries with filters
+    const entries = await getAllJournalEntries({
+      timeframeId: timeframeId,
+      patternId: patternId,
+      ticker: ticker,
+      direction: direction,
+      sentiment: sentiment
+    });
+    
+    return NextResponse.json(entries);
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
+    console.error('Error fetching journal entries:', error);
+    return NextResponse.json(
+      { error: "Failed to fetch journal entries", details: errorMessage },
+      { status: 500 }
+    );
+  }
 }
 
 // POST handler for creating a new journal entry
@@ -62,23 +45,82 @@ export async function POST(request: Request) {
   try {
     const body = await request.json();
     
-    // In a real application, validate the input and save to database
-    const newEntry = {
-      id: (journalEntries.length + 1).toString(),
-      ...body,
-      entryDate: new Date(),
-      relevantWeek: calculateRelevantWeek(new Date()),
-      updates: [],
-    };
+    console.log('Received request body:', body);
     
-    // In a real application, this would be saved to a database
-    journalEntries.push(newEntry);
+    // Set default entry date if not provided
+    if (!body.entryDate) {
+      body.entryDate = new Date().toISOString();
+    }
     
-    return NextResponse.json(newEntry, { status: 201 });
-  } catch (error) {
+    // Ensure retro status fields are set to pending by default
+    if (!body.retro7DStatus) {
+      body.retro7DStatus = 'pending';
+    }
+    
+    if (!body.retro30DStatus) {
+      body.retro30DStatus = 'pending';
+    }
+    
+    // Note: We've removed the relevantWeek calculation since it's not in our schema
+    
+    // Log the formatted data before creation
+    console.log('Attempting to create journal entry with data:', body);
+    
+    try {
+      // Create new entry
+      const newEntry = await createJournalEntry(body);
+      console.log('Created journal entry successfully:', newEntry);
+      return NextResponse.json(newEntry, { status: 201 });
+    } catch (dbError: unknown) {
+      // Enhanced error for database operations
+      const errorMessage = dbError instanceof Error ? dbError.message : 'Unknown database error';
+      console.error('Database error creating journal entry:', dbError);
+      
+      // Check for common Prisma errors
+      const errorString = String(dbError);
+      
+      // Handle specific Prisma validation errors
+      if (errorString.includes('Unknown argument')) {
+        // This catches errors like "Unknown argument `timeframeId`. Did you mean `timeframe`?"
+        return NextResponse.json(
+          { 
+            error: "Failed to create journal entry", 
+            details: "Database schema error: The request contains invalid field names. This is likely a bug in our code. Please try again or contact support if the issue persists."
+          },
+          { status: 500 }
+        );
+      }
+      
+      // Handle foreign key constraint errors
+      if (errorString.includes('Foreign key constraint failed')) {
+        return NextResponse.json(
+          { 
+            error: "Failed to create journal entry", 
+            details: "The selected timeframe or pattern doesn't exist. Please select valid options."
+          },
+          { status: 400 }
+        );
+      }
+      
+      // Other Prisma errors
+      const isPrismaError = errorString.includes('Prisma');
+      const detailedMessage = isPrismaError 
+        ? `Database error: ${errorMessage}`
+        : `Error creating entry: ${errorMessage}`;
+        
+      return NextResponse.json(
+        { error: "Failed to create journal entry", details: detailedMessage },
+        { status: 500 }
+      );
+    }
+  } catch (error: unknown) {
+    // This catches JSON parsing errors and other request-level issues
+    const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
+    console.error('Request error creating journal entry:', error);
+    
     return NextResponse.json(
-      { error: "Failed to create journal entry" },
-      { status: 500 }
+      { error: "Failed to process request", details: errorMessage },
+      { status: 400 }
     );
   }
 }

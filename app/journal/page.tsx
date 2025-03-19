@@ -15,11 +15,16 @@ import {
   Save, 
   X,
   Settings,
-  HelpCircle
+  HelpCircle,
+  Loader2
 } from "lucide-react";
 import { TimeTablePanel } from "@/components/time-table-panel";
 import { RetrospectiveReminder } from "@/components/retrospective-reminder";
 import { createLogger } from "@/lib/logger";
+import { useJournalEntries } from "@/lib/hooks/useJournalEntries";
+import { useTimeframes, usePatterns, useTooltips } from "@/lib/hooks/useConfig";
+import { format } from "date-fns";
+import { formatPrice } from "@/lib/utils";
 
 const logger = createLogger('JournalPage');
 
@@ -47,116 +52,39 @@ export default function JournalPage() {
   const [selectedTimeframe, setSelectedTimeframe] = useState<string | null>(null);
   const [showFilters, setShowFilters] = useState(false);
 
-  // Mock data for demonstration
-  const journalEntries = [
-    {
-      id: "1",
-      date: "2023-05-15",
-      ticker: "AAPL",
-      price: 145.86,
-      timeframe: "Daily",
-      direction: "Bullish",
-      sentiment: "Bullish",
-      pattern: "Cup & Handle",
-      retrospective7D: "pending",
-      retrospective30D: "pending",
-      support: 142.50,
-      resistance: 148.75,
-      comments: "Strong support at 142.50, expecting a breakout above 148.75 in the next few days."
-    },
-    {
-      id: "2",
-      date: "2023-05-12",
-      ticker: "MSFT",
-      price: 305.41,
-      timeframe: "Weekly",
-      direction: "Bullish",
-      sentiment: "Neutral",
-      pattern: "Ascending Triangle",
-      retrospective7D: "completed",
-      retrospective30D: "pending",
-      support: 300.00,
-      resistance: 310.25,
-      comments: "Consolidating near all-time highs, watching for volume confirmation."
-    },
-    {
-      id: "3",
-      date: "2023-05-10",
-      ticker: "TSLA",
-      price: 180.54,
-      timeframe: "Daily",
-      direction: "Bearish",
-      sentiment: "Bearish",
-      pattern: "Head & Shoulders",
-      retrospective7D: "completed",
-      retrospective30D: "completed",
-      support: 175.00,
-      resistance: 185.50,
-      comments: "Breaking below neckline, targeting 165 area in the short term."
-    },
-    {
-      id: "4",
-      date: "2023-05-08",
-      ticker: "AMZN",
-      price: 110.26,
-      timeframe: "Hourly",
-      direction: "Bullish",
-      sentiment: "Bullish",
-      pattern: "Double Bottom",
-      retrospective7D: "pending",
-      retrospective30D: "pending",
-      support: 108.50,
-      resistance: 112.75,
-      comments: "Watching for confirmation of the double bottom pattern with increased volume."
-    },
-    {
-      id: "5",
-      date: "2023-05-05",
-      ticker: "NVDA",
-      price: 277.49,
-      timeframe: "Weekly",
-      direction: "Bullish",
-      sentiment: "Bullish",
-      pattern: "Breakout",
-      retrospective7D: "completed",
-      retrospective30D: "pending",
-      support: 270.00,
-      resistance: 285.00,
-      comments: "Strong momentum after earnings, watching for continuation."
-    }
-  ];
+  // Fetch journal entries with filters
+  const { 
+    entries: journalEntries, 
+    isLoading: entriesLoading, 
+    error: entriesError,
+    updateFilters,
+    resetFilters: resetApiFilters,
+    getOverdueRetrospectivesCount,
+    refreshEntries
+  } = useJournalEntries();
+
+  // Fetch configuration data
+  const { timeframes, isLoading: timeframesLoading } = useTimeframes();
+  const { patterns, isLoading: patternsLoading } = usePatterns();
+  const { tooltips, isLoading: tooltipsLoading } = useTooltips();
 
   // Calculate number of overdue retrospectives
-  const overdueRetrospectives = journalEntries.filter(
-    entry => entry.retrospective7D === "pending" || entry.retrospective30D === "pending"
-  ).length;
-
-  // Mock data for patterns (this would come from settings in the real app)
-  const availablePatterns = [
-    "Cup & Handle",
-    "Head & Shoulders",
-    "Double Bottom",
-    "Double Top",
-    "Ascending Triangle",
-    "Descending Triangle",
-    "Flag",
-    "Pennant",
-    "Breakout",
-  ];
-
-  // Mock tooltip text (this would come from settings in the real app)
-  const tooltips = {
-    direction: "Direction indicates whether you expect the price to go up (Bullish) or down (Bearish)",
-    sentiment: "Sentiment reflects your overall feeling about the trade based on your analysis"
-  };
+  const overdueRetrospectives = getOverdueRetrospectivesCount();
 
   /**
    * Handles timeframe filter selection
    * Toggles the selected timeframe or clears it if already selected
    */
-  const handleTimeframeFilter = (timeframe: string) => {
-    logger.debug('Handling timeframe filter change', { timeframe });
-    setSelectedTimeframe(timeframe === selectedTimeframe ? null : timeframe);
+  const handleTimeframeFilter = (timeframeId: string) => {
+    logger.debug('Handling timeframe filter change', { timeframeId });
+    
+    if (selectedTimeframe === timeframeId) {
+      setSelectedTimeframe(null);
+      updateFilters({ timeframeId: undefined });
+    } else {
+      setSelectedTimeframe(timeframeId);
+      updateFilters({ timeframeId });
+    }
   };
 
   /**
@@ -165,6 +93,7 @@ export default function JournalPage() {
   const resetFilters = () => {
     logger.info('Resetting all filters');
     setSelectedTimeframe(null);
+    resetApiFilters();
   };
 
   /**
@@ -228,16 +157,11 @@ export default function JournalPage() {
     }
   };
 
-  // Filter entries based on selected criteria
-  const filteredEntries = journalEntries.filter(entry => {
-    if (selectedTimeframe && entry.timeframe !== selectedTimeframe) {
-      return false;
-    }
-    return true;
-  });
+  // Loading state
+  const isLoading = entriesLoading || timeframesLoading || patternsLoading || tooltipsLoading;
 
   logger.info('Rendering journal page', { 
-    entriesCount: filteredEntries.length,
+    entriesCount: journalEntries.length,
     overdueRetrospectives,
     activeFilters: {
       timeframe: selectedTimeframe
@@ -248,462 +172,340 @@ export default function JournalPage() {
     <div className="container mx-auto py-6 space-y-6">
       <h1 className="text-2xl font-bold mb-6">Journal Entries</h1>
       
-      {/* Retrospective Action Required */}
-      <RetrospectiveReminder 
-        overdueCount={overdueRetrospectives} 
-        onComplete={handleCompleteRetrospective} 
-      />
-      
-      {/* Filters */}
-      <div className="bg-card p-4 rounded-lg shadow-sm border">
-        <div className="flex justify-between items-center mb-4">
-          <h2 className="text-xl font-semibold">Journal Entries</h2>
-          <div className="flex space-x-2">
-            <button
-              onClick={() => setShowFilters(!showFilters)}
-              className="flex items-center px-3 py-2 bg-muted rounded-md text-sm"
-            >
-              <Filter className="h-4 w-4 mr-2" />
-              Filters
-              {showFilters ? (
-                <ChevronUp className="h-4 w-4 ml-2" />
-              ) : (
-                <ChevronDown className="h-4 w-4 ml-2" />
-              )}
-            </button>
-            <Link
-              href="/journal/new"
-              className="flex items-center px-3 py-2 bg-primary text-primary-foreground rounded-md text-sm"
-            >
-              <Plus className="h-4 w-4 mr-2" />
-              Add New Entry
-            </Link>
-          </div>
+      {/* Top action bar */}
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
+        <div className="flex items-center gap-2">
+          <button 
+            onClick={() => router.push('/journal/new')}
+            className="bg-primary text-primary-foreground hover:bg-primary/90 px-4 py-2 rounded-md flex items-center gap-2"
+          >
+            <Plus size={16} />
+            <span>New Entry</span>
+          </button>
+          
+          <button 
+            onClick={() => refreshEntries()}
+            className="bg-secondary text-secondary-foreground hover:bg-secondary/80 px-3 py-2 rounded-md"
+            disabled={isLoading}
+          >
+            {isLoading ? (
+              <Loader2 size={16} className="animate-spin" />
+            ) : (
+              <RefreshCcw size={16} />
+            )}
+          </button>
         </div>
-
-        {showFilters && (
-          <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-4">
-            <div>
-              <button
-                onClick={() => handleTimeframeFilter("Hourly")}
-                className={`px-3 py-2 text-sm rounded-md w-full ${
-                  selectedTimeframe === "Hourly"
-                    ? "bg-primary text-primary-foreground"
-                    : "bg-muted"
-                }`}
-              >
-                Hourly
-              </button>
-            </div>
-            <div>
-              <button
-                onClick={() => handleTimeframeFilter("Daily")}
-                className={`px-3 py-2 text-sm rounded-md w-full ${
-                  selectedTimeframe === "Daily"
-                    ? "bg-primary text-primary-foreground"
-                    : "bg-muted"
-                }`}
-              >
-                Daily
-              </button>
-            </div>
-            <div>
-              <button
-                onClick={() => handleTimeframeFilter("Weekly")}
-                className={`px-3 py-2 text-sm rounded-md w-full ${
-                  selectedTimeframe === "Weekly"
-                    ? "bg-primary text-primary-foreground"
-                    : "bg-muted"
-                }`}
-              >
-                Weekly
-              </button>
-            </div>
-            <div>
-              <button
-                onClick={() => handleTimeframeFilter("Monthly")}
-                className={`px-3 py-2 text-sm rounded-md w-full ${
-                  selectedTimeframe === "Monthly"
-                    ? "bg-primary text-primary-foreground"
-                    : "bg-muted"
-                }`}
-              >
-                Monthly
-              </button>
-            </div>
-            <div>
-              <button
-                onClick={resetFilters}
-                className="px-3 py-2 text-sm bg-destructive text-destructive-foreground rounded-md w-full"
-              >
-                Reset Filters
-              </button>
-            </div>
-          </div>
-        )}
-
-        {showFilters && (
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <div>
-              <input
-                type="text"
-                placeholder="Ticker"
-                className="w-full p-2 text-sm border rounded-md bg-background"
-              />
-            </div>
-            <div>
-              <input
-                type="week"
-                placeholder="Week"
-                className="w-full p-2 text-sm border rounded-md bg-background"
-              />
-            </div>
-            <div>
-              <select className="w-full p-2 text-sm border rounded-md bg-background">
-                <option value="">Sentiment</option>
-                <option value="Bullish">Bullish</option>
-                <option value="Neutral">Neutral</option>
-                <option value="Bearish">Bearish</option>
-              </select>
-            </div>
-            <div>
-              <select className="w-full p-2 text-sm border rounded-md bg-background">
-                <option value="">Retrospective Status</option>
-                <option value="pending">Pending</option>
-                <option value="completed">Completed</option>
-              </select>
-            </div>
-          </div>
-        )}
+        
+        <div className="flex items-center gap-2">
+          <button 
+            onClick={() => setShowFilters(!showFilters)}
+            className="bg-secondary text-secondary-foreground hover:bg-secondary/80 px-3 py-2 rounded-md flex items-center gap-2"
+          >
+            <Filter size={16} />
+            <span>Filters</span>
+            {selectedTimeframe && <span className="bg-primary text-primary-foreground text-xs px-2 py-0.5 rounded-full">1</span>}
+          </button>
+          
+          <Link 
+            href="/settings"
+            className="bg-secondary text-secondary-foreground hover:bg-secondary/80 px-3 py-2 rounded-md"
+          >
+            <Settings size={16} />
+          </Link>
+        </div>
       </div>
       
-      {/* Journal Entries Table */}
-      <div className="bg-card rounded-lg shadow-sm border overflow-hidden">
+      {/* Retrospective reminder */}
+      {overdueRetrospectives > 0 && (
+        <RetrospectiveReminder 
+          count={overdueRetrospectives} 
+          onComplete={handleCompleteRetrospective} 
+        />
+      )}
+      
+      {/* Filter panel */}
+      {showFilters && (
+        <div className="bg-card p-4 rounded-lg shadow-sm border mb-6">
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-lg font-medium">Filter Journal Entries</h2>
+            <button 
+              onClick={resetFilters}
+              className="text-primary text-sm hover:underline"
+            >
+              Reset Filters
+            </button>
+          </div>
+          
+          <div className="space-y-4">
+            <div>
+              <h3 className="text-sm font-medium mb-2">Timeframe</h3>
+              <div className="flex flex-wrap gap-2">
+                {timeframes.map(timeframe => (
+                  <button 
+                    key={timeframe.id}
+                    onClick={() => handleTimeframeFilter(timeframe.id)}
+                    className={`px-3 py-1 text-sm rounded-full border ${
+                      selectedTimeframe === timeframe.id
+                        ? 'bg-primary text-primary-foreground'
+                        : 'bg-background hover:bg-muted'
+                    }`}
+                  >
+                    {timeframe.name}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+      
+      {/* Journal entries table */}
+      {isLoading ? (
+        <div className="flex justify-center items-center py-12">
+          <Loader2 size={24} className="animate-spin mr-2" />
+          <span>Loading journal entries...</span>
+        </div>
+      ) : entriesError ? (
+        <div className="bg-destructive/10 text-destructive p-4 rounded-md">
+          <p>Error loading journal entries. Please try again.</p>
+        </div>
+      ) : journalEntries.length === 0 ? (
+        <div className="bg-card p-8 rounded-md text-center">
+          <p className="text-muted-foreground mb-4">No journal entries found.</p>
+          <button 
+            onClick={() => router.push('/journal/new')}
+            className="bg-primary text-primary-foreground hover:bg-primary/90 px-4 py-2 rounded-md"
+          >
+            Create your first entry
+          </button>
+        </div>
+      ) : (
         <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead className="bg-muted">
-              <tr>
-                <th className="p-3 text-left text-sm font-medium"></th>
-                <th className="p-3 text-left text-sm font-medium">Date</th>
-                <th className="p-3 text-left text-sm font-medium">Ticker</th>
-                <th className="p-3 text-left text-sm font-medium">Price</th>
-                <th className="p-3 text-left text-sm font-medium relative">
-                  <div className="flex items-center">
-                    Timeframe
-                    <Link href="/settings/timeframes" className="ml-1">
-                      <Settings className="h-4 w-4 text-muted-foreground hover:text-primary" />
-                    </Link>
-                  </div>
-                </th>
-                <th className="p-3 text-left text-sm font-medium relative">
-                  <div className="flex items-center">
-                    Direction
-                    <div className="group relative ml-1">
-                      <HelpCircle className="h-4 w-4 text-muted-foreground" />
-                      <div className="absolute left-0 top-6 scale-0 transition-all rounded bg-popover p-2 text-xs text-popover-foreground group-hover:scale-100 w-48 z-50 shadow-sm">
-                        {tooltips.direction}
-                      </div>
-                    </div>
-                  </div>
-                </th>
-                <th className="p-3 text-left text-sm font-medium relative">
-                  <div className="flex items-center">
-                    Sentiment
-                    <div className="group relative ml-1">
-                      <HelpCircle className="h-4 w-4 text-muted-foreground" />
-                      <div className="absolute left-0 top-6 scale-0 transition-all rounded bg-popover p-2 text-xs text-popover-foreground group-hover:scale-100 w-48 z-50 shadow-sm">
-                        {tooltips.sentiment}
-                      </div>
-                    </div>
-                  </div>
-                </th>
-                <th className="p-3 text-left text-sm font-medium relative">
-                  <div className="flex items-center">
-                    Pattern
-                    <Link href="/settings/patterns" className="ml-1">
-                      <Settings className="h-4 w-4 text-muted-foreground hover:text-primary" />
-                    </Link>
-                  </div>
-                </th>
-                <th className="p-3 text-left text-sm font-medium">7D</th>
-                <th className="p-3 text-left text-sm font-medium">30D</th>
-                <th className="p-3 text-left text-sm font-medium">Actions</th>
+          <table className="w-full border-collapse">
+            <thead>
+              <tr className="bg-muted">
+                <th className="px-4 py-2 text-left">Date</th>
+                <th className="px-4 py-2 text-left">Ticker</th>
+                <th className="px-4 py-2 text-left">Price</th>
+                <th className="px-4 py-2 text-left">Timeframe</th>
+                <th className="px-4 py-2 text-left">Direction</th>
+                <th className="px-4 py-2 text-left">Pattern</th>
+                <th className="px-4 py-2 text-left">Retro 7D</th>
+                <th className="px-4 py-2 text-left">Retro 30D</th>
+                <th className="px-4 py-2 text-center">Actions</th>
               </tr>
             </thead>
             <tbody>
-              {filteredEntries.map((entry) => (
-                <>
-                  <tr key={entry.id} className="border-b">
-                    <td className="p-3">
+              {journalEntries.map(entry => [
+                <tr 
+                  key={`row-${entry.id}`}
+                  className={`border-b hover:bg-muted/50 ${
+                    expandedRows.includes(entry.id) ? 'bg-muted/30' : ''
+                  }`}
+                >
+                  <td className="px-4 py-3">
+                    {format(new Date(entry.entryDate), 'yyyy-MM-dd')}
+                  </td>
+                  <td className="px-4 py-3 font-medium">{entry.ticker}</td>
+                  <td className="px-4 py-3">{formatPrice(entry.price)}</td>
+                  <td className="px-4 py-3">{entry.timeframe?.name || '-'}</td>
+                  <td className="px-4 py-3">
+                    <span className={`px-2 py-0.5 rounded-full text-xs ${
+                      entry.direction === 'Bullish' 
+                        ? 'bg-green-100 text-green-800' 
+                        : 'bg-red-100 text-red-800'
+                    }`}>
+                      {entry.direction}
+                    </span>
+                  </td>
+                  <td className="px-4 py-3">{entry.pattern?.name || '-'}</td>
+                  <td className="px-4 py-3">
+                    <span className={`px-2 py-0.5 rounded-full text-xs ${
+                      entry.retro7DStatus === 'pending'
+                        ? 'bg-yellow-100 text-yellow-800'
+                        : entry.retro7DOutcome === 'win'
+                          ? 'bg-green-100 text-green-800'
+                          : 'bg-red-100 text-red-800'
+                    }`}>
+                      {entry.retro7DStatus === 'pending' 
+                        ? 'Pending' 
+                        : entry.retro7DOutcome === 'win' ? 'Win' : 'Loss'}
+                    </span>
+                  </td>
+                  <td className="px-4 py-3">
+                    <span className={`px-2 py-0.5 rounded-full text-xs ${
+                      entry.retro30DStatus === 'pending'
+                        ? 'bg-yellow-100 text-yellow-800'
+                        : entry.retro30DOutcome === 'win'
+                          ? 'bg-green-100 text-green-800'
+                          : 'bg-red-100 text-red-800'
+                    }`}>
+                      {entry.retro30DStatus === 'pending' 
+                        ? 'Pending' 
+                        : entry.retro30DOutcome === 'win' ? 'Win' : 'Loss'}
+                    </span>
+                  </td>
+                  <td className="px-4 py-3 text-center">
+                    <div className="flex justify-center space-x-2">
                       <button 
                         onClick={() => toggleRowExpansion(entry.id)}
-                        className="p-1 rounded-full hover:bg-muted"
+                        className="text-muted-foreground hover:text-foreground"
+                        aria-label={expandedRows.includes(entry.id) ? "Collapse row" : "Expand row"}
                       >
                         {expandedRows.includes(entry.id) ? (
-                          <ChevronUp className="h-4 w-4" />
+                          <ChevronUp size={16} />
                         ) : (
-                          <ChevronDown className="h-4 w-4" />
+                          <ChevronDown size={16} />
                         )}
                       </button>
-                    </td>
-                    <td className="p-3 text-sm">{entry.date}</td>
-                    <td className="p-3 text-sm font-medium">
-                      {editingRows.includes(entry.id) ? (
-                        <input
-                          type="text"
-                          defaultValue={entry.ticker}
-                          className="w-full p-1 text-sm border rounded bg-background"
-                        />
-                      ) : (
-                        entry.ticker
-                      )}
-                    </td>
-                    <td className="p-3 text-sm">
-                      {editingRows.includes(entry.id) ? (
-                        <input
-                          type="number"
-                          defaultValue={entry.price}
-                          step="0.01"
-                          className="w-full p-1 text-sm border rounded bg-background"
-                        />
-                      ) : (
-                        `$${entry.price.toFixed(2)}`
-                      )}
-                    </td>
-                    <td className="p-3 text-sm">
-                      {editingRows.includes(entry.id) ? (
-                        <select
-                          defaultValue={entry.timeframe}
-                          className="w-full p-1 text-sm border rounded bg-background"
-                        >
-                          <option value="Hourly">Hourly</option>
-                          <option value="Daily">Daily</option>
-                          <option value="Weekly">Weekly</option>
-                          <option value="Monthly">Monthly</option>
-                        </select>
-                      ) : (
-                        entry.timeframe
-                      )}
-                    </td>
-                    <td className="p-3 text-sm">
-                      {editingRows.includes(entry.id) ? (
-                        <select
-                          defaultValue={entry.direction}
-                          className="w-full p-1 text-sm border rounded bg-background"
-                        >
-                          <option value="Bullish">Bullish</option>
-                          <option value="Bearish">Bearish</option>
-                        </select>
-                      ) : (
-                        entry.direction
-                      )}
-                    </td>
-                    <td className="p-3 text-sm">
-                      {editingRows.includes(entry.id) ? (
-                        <select
-                          defaultValue={entry.sentiment}
-                          className="w-full p-1 text-sm border rounded bg-background"
-                        >
-                          <option value="Bullish">Bullish</option>
-                          <option value="Neutral">Neutral</option>
-                          <option value="Bearish">Bearish</option>
-                        </select>
-                      ) : (
-                        <span
-                          className={`inline-block px-2 py-1 rounded-full text-xs ${
-                            entry.sentiment === "Bullish"
-                              ? "bg-green-100 text-green-800"
-                              : entry.sentiment === "Bearish"
-                              ? "bg-red-100 text-red-800"
-                              : "bg-yellow-100 text-yellow-800"
-                          }`}
-                        >
-                          {entry.sentiment}
-                        </span>
-                      )}
-                    </td>
-                    <td className="p-3 text-sm">
-                      {editingRows.includes(entry.id) ? (
-                        <select
-                          defaultValue={entry.pattern}
-                          className="w-full p-1 text-sm border rounded bg-background"
-                        >
-                          {availablePatterns.map(pattern => (
-                            <option key={pattern} value={pattern}>
-                              {pattern}
-                            </option>
-                          ))}
-                        </select>
-                      ) : (
-                        entry.pattern
-                      )}
-                    </td>
-                    <td className="p-3 text-sm">
-                      <span
-                        className={`inline-block w-3 h-3 rounded-full ${
-                          entry.retrospective7D === "completed"
-                            ? "bg-green-500"
-                            : "bg-yellow-500"
+                      <button
+                        onClick={() => toggleRowEditing(entry.id)}
+                        className={`${
+                          editingRows.includes(entry.id) 
+                            ? 'text-primary' 
+                            : 'text-muted-foreground hover:text-foreground'
                         }`}
-                      ></span>
-                    </td>
-                    <td className="p-3 text-sm">
-                      <span
-                        className={`inline-block w-3 h-3 rounded-full ${
-                          entry.retrospective30D === "completed"
-                            ? "bg-green-500"
-                            : "bg-yellow-500"
-                        }`}
-                      ></span>
-                    </td>
-                    <td className="p-3 text-sm">
-                      <div className="flex space-x-2">
-                        <button
-                          onClick={() => toggleRowEditing(entry.id)}
-                          className="p-1 rounded-full hover:bg-muted text-blue-600"
-                          title={editingRows.includes(entry.id) ? "Save changes" : "Edit entry"}
-                        >
-                          {editingRows.includes(entry.id) ? (
-                            <Save className="h-4 w-4" />
-                          ) : (
-                            <Edit className="h-4 w-4" />
+                        aria-label={editingRows.includes(entry.id) ? "Save changes" : "Edit entry"}
+                      >
+                        {editingRows.includes(entry.id) ? (
+                          <Save size={16} />
+                        ) : (
+                          <Edit size={16} />
+                        )}
+                      </button>
+                      <button
+                        onClick={() => handleViewDetails(entry.id)}
+                        className="text-muted-foreground hover:text-foreground"
+                        aria-label="View details"
+                      >
+                        <Eye size={16} />
+                      </button>
+                    </div>
+                  </td>
+                </tr>,
+                
+                expandedRows.includes(entry.id) && (
+                  <tr key={`expanded-${entry.id}`} className="bg-muted/20">
+                    <td colSpan={9} className="px-8 py-4">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        {/* Left Column - Additional Info */}
+                        <div>
+                          <h3 className="text-lg font-medium mb-2">Additional Information</h3>
+                          <div className="grid grid-cols-2 gap-4 mb-4">
+                            {entry.support && (
+                              <div>
+                                <p className="text-sm text-muted-foreground">Support</p>
+                                <p className="font-medium">{formatPrice(entry.support)}</p>
+                              </div>
+                            )}
+                            {entry.resistance && (
+                              <div>
+                                <p className="text-sm text-muted-foreground">Resistance</p>
+                                <p className="font-medium">{formatPrice(entry.resistance)}</p>
+                              </div>
+                            )}
+                            <div>
+                              <p className="text-sm text-muted-foreground">Sentiment</p>
+                              <p className="font-medium">{entry.sentiment}</p>
+                            </div>
+                            <div>
+                              <p className="text-sm text-muted-foreground">Weekly One Pager</p>
+                              <p className="font-medium">{entry.isWeeklyOnePagerEligible ? 'Yes' : 'No'}</p>
+                            </div>
+                          </div>
+                          {entry.comments && (
+                            <div>
+                              <p className="text-sm text-muted-foreground">Comments</p>
+                              <p className="bg-muted/40 p-3 rounded-md">{entry.comments}</p>
+                            </div>
                           )}
-                        </button>
-                        <button
-                          onClick={() => handleViewDetails(entry.id)}
-                          className="p-1 rounded-full hover:bg-muted text-blue-600"
-                          title="View details"
-                        >
-                          <Eye className="h-4 w-4" />
-                        </button>
+                        </div>
+                        
+                        {/* Right Column - Edit Form (only shown when editing) */}
+                        {editingRows.includes(entry.id) && (
+                          <div className="bg-card p-4 rounded-md border">
+                            <h3 className="text-lg font-medium mb-3">Edit Entry</h3>
+                            <form className="space-y-4">
+                              <div className="grid grid-cols-2 gap-4">
+                                <div className="space-y-1">
+                                  <label className="text-sm font-medium">Ticker</label>
+                                  <input 
+                                    type="text" 
+                                    defaultValue={entry.ticker}
+                                    className="w-full px-3 py-1.5 border rounded-md"
+                                  />
+                                </div>
+                                <div className="space-y-1">
+                                  <label className="text-sm font-medium">Price</label>
+                                  <input 
+                                    type="number" 
+                                    step="0.01"
+                                    defaultValue={String(entry.price)}
+                                    className="w-full px-3 py-1.5 border rounded-md"
+                                  />
+                                </div>
+                                <div className="space-y-1">
+                                  <label className="text-sm font-medium">Support</label>
+                                  <input 
+                                    type="number"
+                                    step="0.01"
+                                    defaultValue={entry.support ? String(entry.support) : ''}
+                                    className="w-full px-3 py-1.5 border rounded-md"
+                                  />
+                                </div>
+                                <div className="space-y-1">
+                                  <label className="text-sm font-medium">Resistance</label>
+                                  <input 
+                                    type="number"
+                                    step="0.01"
+                                    defaultValue={entry.resistance ? String(entry.resistance) : ''}
+                                    className="w-full px-3 py-1.5 border rounded-md"
+                                  />
+                                </div>
+                              </div>
+                              <div className="space-y-1">
+                                <label className="text-sm font-medium">Comments</label>
+                                <textarea
+                                  rows={3}
+                                  defaultValue={entry.comments || ''}
+                                  className="w-full px-3 py-1.5 border rounded-md"
+                                ></textarea>
+                              </div>
+                              <div className="flex justify-end gap-2">
+                                <button
+                                  type="button"
+                                  onClick={() => toggleRowEditing(entry.id)}
+                                  className="px-3 py-1.5 text-sm border rounded-md hover:bg-muted"
+                                >
+                                  Cancel
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => toggleRowEditing(entry.id)}
+                                  className="px-3 py-1.5 text-sm bg-primary text-primary-foreground rounded-md hover:bg-primary/90"
+                                >
+                                  Save Changes
+                                </button>
+                              </div>
+                            </form>
+                          </div>
+                        )}
                       </div>
                     </td>
                   </tr>
-                  {expandedRows.includes(entry.id) && (
-                    <tr className="bg-muted/30">
-                      <td colSpan={11} className="p-4">
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                          <div>
-                            <h4 className="font-medium mb-2">Support & Resistance</h4>
-                            {editingRows.includes(entry.id) ? (
-                              <div className="space-y-2">
-                                <div className="flex items-center">
-                                  <span className="w-24 text-sm">Support:</span>
-                                  <input 
-                                    type="number" 
-                                    defaultValue={entry.support} 
-                                    step="0.01"
-                                    className="p-1 text-sm border rounded bg-background w-32" 
-                                  />
-                                </div>
-                                <div className="flex items-center">
-                                  <span className="w-24 text-sm">Resistance:</span>
-                                  <input 
-                                    type="number" 
-                                    defaultValue={entry.resistance} 
-                                    step="0.01"
-                                    className="p-1 text-sm border rounded bg-background w-32" 
-                                  />
-                                </div>
-                              </div>
-                            ) : (
-                              <div className="space-y-1">
-                                <div className="text-sm">Support: <span className="font-medium">${entry.support.toFixed(2)}</span></div>
-                                <div className="text-sm">Resistance: <span className="font-medium">${entry.resistance.toFixed(2)}</span></div>
-                              </div>
-                            )}
-                          </div>
-                          
-                          <div>
-                            <h4 className="font-medium mb-2">Comments</h4>
-                            {editingRows.includes(entry.id) ? (
-                              <textarea 
-                                defaultValue={entry.comments}
-                                rows={3}
-                                className="w-full p-2 text-sm border rounded bg-background"
-                              ></textarea>
-                            ) : (
-                              <p className="text-sm">{entry.comments}</p>
-                            )}
-                          </div>
-                          
-                          <div>
-                            <h4 className="font-medium mb-2">Retrospective Status</h4>
-                            {editingRows.includes(entry.id) ? (
-                              <div className="space-y-2">
-                                <div className="flex items-center">
-                                  <span className="w-24 text-sm">7 Day:</span>
-                                  <select 
-                                    defaultValue={entry.retrospective7D}
-                                    className="p-1 text-sm border rounded bg-background w-32"
-                                  >
-                                    <option value="pending">Pending</option>
-                                    <option value="completed">Completed</option>
-                                  </select>
-                                </div>
-                                <div className="flex items-center">
-                                  <span className="w-24 text-sm">30 Day:</span>
-                                  <select 
-                                    defaultValue={entry.retrospective30D}
-                                    className="p-1 text-sm border rounded bg-background w-32"
-                                  >
-                                    <option value="pending">Pending</option>
-                                    <option value="completed">Completed</option>
-                                  </select>
-                                </div>
-                              </div>
-                            ) : (
-                              <div className="space-y-1">
-                                <div className="text-sm">
-                                  7 Day: 
-                                  <span className={`ml-2 px-2 py-0.5 rounded-full text-xs ${
-                                    entry.retrospective7D === "completed" 
-                                      ? "bg-green-100 text-green-800" 
-                                      : "bg-yellow-100 text-yellow-800"
-                                  }`}>
-                                    {entry.retrospective7D === "completed" ? "Completed" : "Pending"}
-                                  </span>
-                                </div>
-                                <div className="text-sm">
-                                  30 Day: 
-                                  <span className={`ml-2 px-2 py-0.5 rounded-full text-xs ${
-                                    entry.retrospective30D === "completed" 
-                                      ? "bg-green-100 text-green-800" 
-                                      : "bg-yellow-100 text-yellow-800"
-                                  }`}>
-                                    {entry.retrospective30D === "completed" ? "Completed" : "Pending"}
-                                  </span>
-                                </div>
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      </td>
-                    </tr>
-                  )}
-                </>
-              ))}
+                )
+              ].filter(Boolean))}
             </tbody>
           </table>
         </div>
-      </div>
+      )}
       
-      {/* Side Panel for Time Table (conditionally rendered) */}
+      {/* Side panel for viewing entry details */}
       {showSidePanel && selectedEntryId && (
-        <div className="fixed inset-y-0 right-0 w-full md:w-1/2 lg:w-1/3 bg-background border-l shadow-xl z-50 overflow-auto">
-          <div className="absolute top-4 right-4">
-            <button
-              onClick={closeSidePanel}
-              className="p-2 rounded-full hover:bg-muted"
-            >
-              <X className="h-5 w-5" />
-            </button>
-          </div>
-          <TimeTablePanel 
-            entryId={selectedEntryId} 
-            onClose={closeSidePanel} 
-          />
-        </div>
+        <TimeTablePanel 
+          entryId={selectedEntryId} 
+          onClose={closeSidePanel} 
+        />
       )}
     </div>
   );

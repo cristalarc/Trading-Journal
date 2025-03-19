@@ -1,3 +1,3 @@
 ---UI---
-- Fix black backgrounds to input fields
+- Fix black backgrounds checkboxes during journal entry flow.
 - What does the Time Table "Add Timeframe Analysis button do?
