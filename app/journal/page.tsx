@@ -25,6 +25,8 @@ import { useJournalEntries } from "@/lib/hooks/useJournalEntries";
 import { useTimeframes, usePatterns, useTooltips } from "@/lib/hooks/useConfig";
 import { format } from "date-fns";
 import { formatPrice } from "@/lib/utils";
+import { JournalEditForm } from '@/components/journal-edit-form';
+import { Tooltip } from '@/components/tooltip';
 
 const logger = createLogger('JournalPage');
 
@@ -46,7 +48,7 @@ export default function JournalPage() {
   const [showSidePanel, setShowSidePanel] = useState(false);
   const [selectedEntryId, setSelectedEntryId] = useState<string | null>(null);
   const [expandedRows, setExpandedRows] = useState<string[]>([]);
-  const [editingRows, setEditingRows] = useState<string[]>([]);
+  const [selectedEntryForEdit, setSelectedEntryForEdit] = useState<string | null>(null);
   
   // Filter states
   const [selectedTimeframe, setSelectedTimeframe] = useState<string | null>(null);
@@ -60,7 +62,8 @@ export default function JournalPage() {
     updateFilters,
     resetFilters: resetApiFilters,
     getOverdueRetrospectivesCount,
-    refreshEntries
+    refreshEntries,
+    updateEntry
   } = useJournalEntries();
 
   // Fetch configuration data
@@ -136,25 +139,24 @@ export default function JournalPage() {
   };
 
   /**
-   * Toggles the editing state of a table row
-   * Only one row can be edited at a time
-   * Automatically expands the row when editing is enabled
+   * Handles saving the edited journal entry
    */
-  const toggleRowEditing = (entryId: string) => {
-    logger.debug('Toggling row editing', { entryId });
-    
-    if (editingRows.includes(entryId)) {
-      // Save changes
-      logger.info('Saving changes for entry', { entryId });
-      setEditingRows(prev => prev.filter(id => id !== entryId));
-    } else {
-      // Start editing and ensure row is expanded
-      logger.info('Starting edit mode for entry', { entryId });
-      setEditingRows([entryId]); // Only allow one row to be edited at a time
-      if (!expandedRows.includes(entryId)) {
-        setExpandedRows(prev => [...prev, entryId]);
-      }
+  const handleSaveEntry = async (entryId: string, data: any) => {
+    logger.debug('Saving journal entry', { entryId, data });
+    try {
+      await updateEntry(entryId, data);
+      setSelectedEntryForEdit(null);
+      refreshEntries();
+    } catch (error) {
+      console.error('Error saving journal entry:', error);
+      throw error;
     }
+  };
+
+  // Replace the toggleRowEditing function with this:
+  const handleEditClick = (entryId: string) => {
+    logger.debug('Opening edit form for entry', { entryId });
+    setSelectedEntryForEdit(entryId);
   };
 
   // Loading state
@@ -261,48 +263,76 @@ export default function JournalPage() {
       
       {/* Journal entries table */}
       {isLoading ? (
-        <div className="flex justify-center items-center py-12">
-          <Loader2 size={24} className="animate-spin mr-2" />
-          <span>Loading journal entries...</span>
+        <div className="flex justify-center items-center py-8">
+          <Loader2 className="h-8 w-8 animate-spin" />
         </div>
       ) : entriesError ? (
-        <div className="bg-destructive/10 text-destructive p-4 rounded-md">
-          <p>Error loading journal entries. Please try again.</p>
+        <div className="text-center py-8 text-destructive">
+          <p>Error loading journal entries</p>
+          <p className="text-sm">{entriesError}</p>
         </div>
       ) : journalEntries.length === 0 ? (
-        <div className="bg-card p-8 rounded-md text-center">
-          <p className="text-muted-foreground mb-4">No journal entries found.</p>
-          <button 
-            onClick={() => router.push('/journal/new')}
-            className="bg-primary text-primary-foreground hover:bg-primary/90 px-4 py-2 rounded-md"
-          >
-            Create your first entry
-          </button>
+        <div className="text-center py-8">
+          <p className="text-muted-foreground">No journal entries found</p>
         </div>
       ) : (
-        <div className="overflow-x-auto">
-          <table className="w-full border-collapse">
+        <div className="overflow-x-auto rounded-lg border">
+          <table className="w-full">
             <thead>
-              <tr className="bg-muted">
-                <th className="px-4 py-2 text-left">Date</th>
-                <th className="px-4 py-2 text-left">Ticker</th>
-                <th className="px-4 py-2 text-left">Price</th>
-                <th className="px-4 py-2 text-left">Timeframe</th>
-                <th className="px-4 py-2 text-left">Direction</th>
-                <th className="px-4 py-2 text-left">Pattern</th>
-                <th className="px-4 py-2 text-left">Retro 7D</th>
-                <th className="px-4 py-2 text-left">Retro 30D</th>
-                <th className="px-4 py-2 text-center">Actions</th>
+              <tr className="border-b bg-muted/50">
+                <th className="text-left p-4">Date</th>
+                <th className="text-left p-4">Ticker</th>
+                <th className="text-left p-4">Price</th>
+                <th className="text-left p-4">
+                  <div className="flex items-center gap-2">
+                    Timeframe
+                    <Tooltip 
+                      type="settings" 
+                      text="Configure timeframe options in Settings"
+                      settingsLink="/settings/timeframes"
+                    />
+                  </div>
+                </th>
+                <th className="text-left p-4">
+                  <div className="flex items-center gap-2">
+                    Direction
+                    <Tooltip text="Direction indicates whether you expect the price to go up (Bullish) or down (Bearish)" />
+                  </div>
+                </th>
+                <th className="text-left p-4">
+                  <div className="flex items-center gap-2">
+                    Sentiment
+                    <Tooltip text="Sentiment reflects your overall feeling about the trade based on your analysis" />
+                  </div>
+                </th>
+                <th className="text-left p-4">
+                  <div className="flex items-center gap-2">
+                    Pattern
+                    <Tooltip 
+                      type="settings" 
+                      text="Configure pattern options in Settings"
+                      settingsLink="/settings/patterns"
+                    />
+                  </div>
+                </th>
+                <th className="text-left p-4">
+                  <div className="flex items-center gap-2">
+                    7D Retro
+                    <Tooltip text="7-day review of the trade outcome and lessons learned" />
+                  </div>
+                </th>
+                <th className="text-left p-4">
+                  <div className="flex items-center gap-2">
+                    30D Retro
+                    <Tooltip text="30-day review to evaluate longer-term trade impact and market behavior" />
+                  </div>
+                </th>
+                <th className="text-center p-4">Actions</th>
               </tr>
             </thead>
             <tbody>
               {journalEntries.map(entry => [
-                <tr 
-                  key={`row-${entry.id}`}
-                  className={`border-b hover:bg-muted/50 ${
-                    expandedRows.includes(entry.id) ? 'bg-muted/30' : ''
-                  }`}
-                >
+                <tr key={entry.id} className={expandedRows.includes(entry.id) ? 'border-b-0' : 'border-b'}>
                   <td className="px-4 py-3">
                     {format(new Date(entry.entryDate), 'yyyy-MM-dd')}
                   </td>
@@ -359,19 +389,11 @@ export default function JournalPage() {
                         )}
                       </button>
                       <button
-                        onClick={() => toggleRowEditing(entry.id)}
-                        className={`${
-                          editingRows.includes(entry.id) 
-                            ? 'text-primary' 
-                            : 'text-muted-foreground hover:text-foreground'
-                        }`}
-                        aria-label={editingRows.includes(entry.id) ? "Save changes" : "Edit entry"}
+                        onClick={() => handleEditClick(entry.id)}
+                        className="text-muted-foreground hover:text-foreground"
+                        aria-label="Edit entry"
                       >
-                        {editingRows.includes(entry.id) ? (
-                          <Save size={16} />
-                        ) : (
-                          <Edit size={16} />
-                        )}
+                        <Edit size={16} />
                       </button>
                       <button
                         onClick={() => handleViewDetails(entry.id)}
@@ -383,36 +405,24 @@ export default function JournalPage() {
                     </div>
                   </td>
                 </tr>,
-                
                 expandedRows.includes(entry.id) && (
-                  <tr key={`expanded-${entry.id}`} className="bg-muted/20">
-                    <td colSpan={9} className="px-8 py-4">
+                  <tr key={`${entry.id}-expanded`}>
+                    <td colSpan={8} className="px-4 py-3 bg-muted/30">
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        {/* Left Column - Additional Info */}
-                        <div>
-                          <h3 className="text-lg font-medium mb-2">Additional Information</h3>
-                          <div className="grid grid-cols-2 gap-4 mb-4">
-                            {entry.support && (
-                              <div>
-                                <p className="text-sm text-muted-foreground">Support</p>
-                                <p className="font-medium">{formatPrice(entry.support)}</p>
-                              </div>
-                            )}
-                            {entry.resistance && (
-                              <div>
-                                <p className="text-sm text-muted-foreground">Resistance</p>
-                                <p className="font-medium">{formatPrice(entry.resistance)}</p>
-                              </div>
-                            )}
+                        {/* Left Column - Entry Details */}
+                        <div className="space-y-4">
+                          {entry.support && (
                             <div>
-                              <p className="text-sm text-muted-foreground">Sentiment</p>
-                              <p className="font-medium">{entry.sentiment}</p>
+                              <p className="text-sm text-muted-foreground">Support Level</p>
+                              <p className="font-medium">{formatPrice(entry.support)}</p>
                             </div>
+                          )}
+                          {entry.resistance && (
                             <div>
-                              <p className="text-sm text-muted-foreground">Weekly One Pager</p>
-                              <p className="font-medium">{entry.isWeeklyOnePagerEligible ? 'Yes' : 'No'}</p>
+                              <p className="text-sm text-muted-foreground">Resistance Level</p>
+                              <p className="font-medium">{formatPrice(entry.resistance)}</p>
                             </div>
-                          </div>
+                          )}
                           {entry.comments && (
                             <div>
                               <p className="text-sm text-muted-foreground">Comments</p>
@@ -420,76 +430,6 @@ export default function JournalPage() {
                             </div>
                           )}
                         </div>
-                        
-                        {/* Right Column - Edit Form (only shown when editing) */}
-                        {editingRows.includes(entry.id) && (
-                          <div className="bg-card p-4 rounded-md border">
-                            <h3 className="text-lg font-medium mb-3">Edit Entry</h3>
-                            <form className="space-y-4">
-                              <div className="grid grid-cols-2 gap-4">
-                                <div className="space-y-1">
-                                  <label className="text-sm font-medium">Ticker</label>
-                                  <input 
-                                    type="text" 
-                                    defaultValue={entry.ticker}
-                                    className="w-full px-3 py-1.5 border rounded-md"
-                                  />
-                                </div>
-                                <div className="space-y-1">
-                                  <label className="text-sm font-medium">Price</label>
-                                  <input 
-                                    type="number" 
-                                    step="0.01"
-                                    defaultValue={String(entry.price)}
-                                    className="w-full px-3 py-1.5 border rounded-md"
-                                  />
-                                </div>
-                                <div className="space-y-1">
-                                  <label className="text-sm font-medium">Support</label>
-                                  <input 
-                                    type="number"
-                                    step="0.01"
-                                    defaultValue={entry.support ? String(entry.support) : ''}
-                                    className="w-full px-3 py-1.5 border rounded-md"
-                                  />
-                                </div>
-                                <div className="space-y-1">
-                                  <label className="text-sm font-medium">Resistance</label>
-                                  <input 
-                                    type="number"
-                                    step="0.01"
-                                    defaultValue={entry.resistance ? String(entry.resistance) : ''}
-                                    className="w-full px-3 py-1.5 border rounded-md"
-                                  />
-                                </div>
-                              </div>
-                              <div className="space-y-1">
-                                <label className="text-sm font-medium">Comments</label>
-                                <textarea
-                                  rows={3}
-                                  defaultValue={entry.comments || ''}
-                                  className="w-full px-3 py-1.5 border rounded-md"
-                                ></textarea>
-                              </div>
-                              <div className="flex justify-end gap-2">
-                                <button
-                                  type="button"
-                                  onClick={() => toggleRowEditing(entry.id)}
-                                  className="px-3 py-1.5 text-sm border rounded-md hover:bg-muted"
-                                >
-                                  Cancel
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={() => toggleRowEditing(entry.id)}
-                                  className="px-3 py-1.5 text-sm bg-primary text-primary-foreground rounded-md hover:bg-primary/90"
-                                >
-                                  Save Changes
-                                </button>
-                              </div>
-                            </form>
-                          </div>
-                        )}
                       </div>
                     </td>
                   </tr>
@@ -505,6 +445,15 @@ export default function JournalPage() {
         <TimeTablePanel 
           entryId={selectedEntryId} 
           onClose={closeSidePanel} 
+        />
+      )}
+
+      {/* Edit form modal */}
+      {selectedEntryForEdit && (
+        <JournalEditForm
+          entry={journalEntries.find(e => e.id === selectedEntryForEdit)}
+          onClose={() => setSelectedEntryForEdit(null)}
+          onSave={handleSaveEntry}
         />
       )}
     </div>

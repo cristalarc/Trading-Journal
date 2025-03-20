@@ -10,11 +10,13 @@ const logger = createLogger('TooltipsSettingsPage');
 // Default tooltip texts
 const DEFAULT_DIRECTION_TOOLTIP = "Direction indicates whether you expect the price to go up (Bullish) or down (Bearish)";
 const DEFAULT_SENTIMENT_TOOLTIP = "Sentiment reflects your overall feeling about the trade based on your analysis";
+const DEFAULT_7D_RETRO_TOOLTIP = "7-day review of the trade outcome and lessons learned";
+const DEFAULT_30D_RETRO_TOOLTIP = "30-day review to evaluate longer-term trade impact and market behavior";
 
 /**
  * TooltipsSettingsPage Component
  * 
- * Allows users to customize the help text shown when hovering over Direction and Sentiment fields
+ * Allows users to customize the help text shown when hovering over various fields
  * in the journal entries table. Features include:
  * - Character limit enforcement (50 chars)
  * - Real-time character count
@@ -26,31 +28,15 @@ export default function TooltipsSettingsPage() {
   // State for tooltip text with default values
   const [directionTooltip, setDirectionTooltip] = useState(DEFAULT_DIRECTION_TOOLTIP);
   const [sentimentTooltip, setSentimentTooltip] = useState(DEFAULT_SENTIMENT_TOOLTIP);
+  const [retro7DTooltip, setRetro7DTooltip] = useState(DEFAULT_7D_RETRO_TOOLTIP);
+  const [retro30DTooltip, setRetro30DTooltip] = useState(DEFAULT_30D_RETRO_TOOLTIP);
 
   /**
-   * Updates the direction tooltip text with character limit enforcement
+   * Updates tooltip text with character limit enforcement
    */
-  const handleDirectionTooltipChange = (value: string) => {
+  const handleTooltipChange = (value: string, setter: (value: string) => void) => {
     const trimmedValue = value.slice(0, 50);
-    logger.debug('Updating direction tooltip', {
-      oldValue: directionTooltip,
-      newValue: trimmedValue,
-      charsRemaining: 50 - trimmedValue.length
-    });
-    setDirectionTooltip(trimmedValue);
-  };
-
-  /**
-   * Updates the sentiment tooltip text with character limit enforcement
-   */
-  const handleSentimentTooltipChange = (value: string) => {
-    const trimmedValue = value.slice(0, 50);
-    logger.debug('Updating sentiment tooltip', {
-      oldValue: sentimentTooltip,
-      newValue: trimmedValue,
-      charsRemaining: 50 - trimmedValue.length
-    });
-    setSentimentTooltip(trimmedValue);
+    setter(trimmedValue);
   };
 
   /**
@@ -60,12 +46,50 @@ export default function TooltipsSettingsPage() {
   const handleSave = () => {
     logger.info('Saving tooltip settings', {
       direction: directionTooltip,
-      sentiment: sentimentTooltip
+      sentiment: sentimentTooltip,
+      retro7D: retro7DTooltip,
+      retro30D: retro30DTooltip
     });
     
     // TODO: Implement actual save functionality
-    console.log("Saving tooltips:", { directionTooltip, sentimentTooltip });
+    console.log("Saving tooltips:", { 
+      directionTooltip, 
+      sentimentTooltip,
+      retro7DTooltip,
+      retro30DTooltip
+    });
   };
+
+  // Tooltip input component
+  const TooltipInput = ({ 
+    id, 
+    label, 
+    value, 
+    onChange 
+  }: { 
+    id: string; 
+    label: string; 
+    value: string; 
+    onChange: (value: string) => void;
+  }) => (
+    <div>
+      <label className="block text-sm font-medium mb-2" htmlFor={id}>
+        {label}
+        <span className="text-xs text-muted-foreground ml-2">(50 characters max)</span>
+      </label>
+      <input
+        id={id}
+        type="text"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className="w-full p-2 text-sm border rounded-md bg-background"
+        maxLength={50}
+      />
+      <p className="text-xs text-muted-foreground mt-1">
+        {50 - value.length} characters remaining
+      </p>
+    </div>
+  );
 
   logger.info('Rendering tooltips settings page');
 
@@ -86,43 +110,33 @@ export default function TooltipsSettingsPage() {
 
       <div className="bg-card p-6 rounded-lg shadow-sm border">
         <div className="space-y-6">
-          {/* Direction Tooltip Input */}
-          <div>
-            <label className="block text-sm font-medium mb-2" htmlFor="directionTooltip">
-              Direction Help Text
-              <span className="text-xs text-muted-foreground ml-2">(50 characters max)</span>
-            </label>
-            <input
-              id="directionTooltip"
-              type="text"
-              value={directionTooltip}
-              onChange={(e) => handleDirectionTooltipChange(e.target.value)}
-              className="w-full p-2 text-sm border rounded-md bg-background"
-              maxLength={50}
-            />
-            <p className="text-xs text-muted-foreground mt-1">
-              {50 - directionTooltip.length} characters remaining
-            </p>
-          </div>
+          <TooltipInput
+            id="directionTooltip"
+            label="Direction Help Text"
+            value={directionTooltip}
+            onChange={(value) => handleTooltipChange(value, setDirectionTooltip)}
+          />
 
-          {/* Sentiment Tooltip Input */}
-          <div>
-            <label className="block text-sm font-medium mb-2" htmlFor="sentimentTooltip">
-              Sentiment Help Text
-              <span className="text-xs text-muted-foreground ml-2">(50 characters max)</span>
-            </label>
-            <input
-              id="sentimentTooltip"
-              type="text"
-              value={sentimentTooltip}
-              onChange={(e) => handleSentimentTooltipChange(e.target.value)}
-              className="w-full p-2 text-sm border rounded-md bg-background"
-              maxLength={50}
-            />
-            <p className="text-xs text-muted-foreground mt-1">
-              {50 - sentimentTooltip.length} characters remaining
-            </p>
-          </div>
+          <TooltipInput
+            id="sentimentTooltip"
+            label="Sentiment Help Text"
+            value={sentimentTooltip}
+            onChange={(value) => handleTooltipChange(value, setSentimentTooltip)}
+          />
+
+          <TooltipInput
+            id="retro7DTooltip"
+            label="7D Retrospective Help Text"
+            value={retro7DTooltip}
+            onChange={(value) => handleTooltipChange(value, setRetro7DTooltip)}
+          />
+
+          <TooltipInput
+            id="retro30DTooltip"
+            label="30D Retrospective Help Text"
+            value={retro30DTooltip}
+            onChange={(value) => handleTooltipChange(value, setRetro30DTooltip)}
+          />
 
           {/* Save Button */}
           <div className="flex justify-end">

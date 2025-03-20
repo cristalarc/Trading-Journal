@@ -1,6 +1,5 @@
 Run app and confirm functionality and missing UI features.
-- Check UI versus V0
-- The Edit button does not allow any edits.
+- Check UI versus V0. Change UI to match V0 in terms of notifications and filters.
 - Make sure that relevant week functionality works
 - Add bulk journal clearing capabilities.
 - Connect the pattern, timeframe and tooltip dbs to the UI
@@ -29,7 +28,12 @@ To add:
 - Find where to place the retrospective hub. (likely in analytics?)
 - When you click on a Ticker in the Journal Table, it efectively works as a filter by Ticker.
 - Price is fetched automatically once the ticker is selected. If price can't be fetched, ask user to supply it.
+- Check UI versus V0. Change UI to match V0 in terms of notifications and filters.
+- Make sure that the Eligible for Weekly One Pager edit works when the component is added.
 - ADD THIS TO THE NEW UI. Change the bottom search bar to be able to search in all functions. When you search for a ticker, it shows a table with info from Journal, Weekly One Pager, Trades, etc.
+
+//Settings//
+- Improve the Trading Patterns and Timeframes setting page UI.
 
 ++Testing++
 - Test that the retrospective reminder dissappears when the retrospective is completed.
