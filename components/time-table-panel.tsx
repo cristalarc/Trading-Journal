@@ -47,12 +47,20 @@ export function TimeTablePanel({ ticker, onClose }: TimeTablePanelProps) {
             {arr.length === 0 && <div className="text-muted-foreground text-sm">No entries</div>}
             <div className="flex flex-col gap-2">
               {arr.map(entry => (
-                <div key={entry.id} className="border rounded p-3 bg-gray-50">
+                <div
+                  key={entry.id}
+                  className={`border rounded p-3 bg-gray-50 cursor-pointer transition-colors ${expanded.includes(entry.id) ? 'bg-gray-100' : ''}`}
+                  onClick={() => toggleExpand(entry.id)}
+                  tabIndex={0}
+                  role="button"
+                  aria-expanded={expanded.includes(entry.id)}
+                  onKeyDown={e => {
+                    if (e.key === 'Enter' || e.key === ' ') toggleExpand(entry.id);
+                  }}
+                >
                   <div className="flex justify-between items-center">
                     <span>{format(new Date(entry.entryDate), "yyyy-MM-dd")}</span>
-                    <button onClick={() => toggleExpand(entry.id)}>
-                      {expanded.includes(entry.id) ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-                    </button>
+                    {expanded.includes(entry.id) ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
                   </div>
                   {expanded.includes(entry.id) && (
                     <div className="mt-2 text-sm text-gray-700">{entry.comments || "No comments"}</div>

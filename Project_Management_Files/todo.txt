@@ -1,5 +1,6 @@
 - Complete the Retrospective functionality and retrospectives view.
 - Add bulk journal clearing capabilities.
+- Connect tooltips to DB
 
 Implement actual data persistence (database integration)
 Add form validation and submission handling
