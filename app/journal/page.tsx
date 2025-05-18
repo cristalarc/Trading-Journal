@@ -17,7 +17,8 @@ import {
   Settings,
   HelpCircle,
   Loader2,
-  Bell
+  Bell,
+  Trash2
 } from "lucide-react";
 import { TimeTablePanel } from "@/components/time-table-panel";
 import { RetrospectiveReminder } from "@/components/retrospective-reminder";
@@ -56,6 +57,11 @@ export default function JournalPage() {
   const [showFilters, setShowFilters] = useState(false);
   const [filterTicker, setFilterTicker] = useState<string>('');
 
+  // Bulk delete states
+  const [selectMode, setSelectMode] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+
   // Fetch journal entries with filters
   const { 
     entries: journalEntries, 
@@ -65,7 +71,8 @@ export default function JournalPage() {
     resetFilters: resetApiFilters,
     getOverdueRetrospectivesCount,
     refreshEntries,
-    updateEntry
+    updateEntry,
+    deleteEntry
   } = useJournalEntries();
 
   // Fetch configuration data
@@ -164,6 +171,26 @@ export default function JournalPage() {
   // Loading state
   const isLoading = entriesLoading || timeframesLoading || patternsLoading || tooltipsLoading;
 
+  const handleSelectAll = () => {
+    if (selectedIds.length === journalEntries.length) {
+      setSelectedIds([]);
+    } else {
+      setSelectedIds(journalEntries.map(e => e.id));
+    }
+  };
+
+  const handleSelectRow = (id: string) => {
+    setSelectedIds(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]);
+  };
+
+  const handleBulkDelete = async () => {
+    setShowDeleteModal(false);
+    await Promise.all(selectedIds.map(id => deleteEntry(id)));
+    setSelectedIds([]);
+    setSelectMode(false);
+    refreshEntries();
+  };
+
   logger.info('Rendering journal page', { 
     entriesCount: journalEntries.length,
     overdueRetrospectives,
@@ -186,7 +213,16 @@ export default function JournalPage() {
             <Plus size={16} />
             <span>New Entry</span>
           </button>
-          
+          <button
+            onClick={() => {
+              setSelectMode(true);
+              setSelectedIds([]);
+            }}
+            className="bg-destructive text-destructive-foreground hover:bg-destructive/90 px-4 py-2 rounded-md flex items-center gap-2"
+          >
+            <Trash2 size={16} />
+            <span>Delete Entries</span>
+          </button>
           <button 
             onClick={() => refreshEntries()}
             className="bg-secondary text-secondary-foreground hover:bg-secondary/80 px-3 py-2 rounded-md"
@@ -306,6 +342,15 @@ export default function JournalPage() {
           <table className="w-full">
             <thead>
               <tr className="border-b bg-muted/50">
+                {selectMode && (
+                  <th className="p-4 text-center">
+                    <input
+                      type="checkbox"
+                      checked={selectedIds.length === journalEntries.length && journalEntries.length > 0}
+                      onChange={handleSelectAll}
+                    />
+                  </th>
+                )}
                 <th className="text-left p-4">Date</th>
                 <th className="text-left p-4">Ticker</th>
                 <th className="text-left p-4">Price</th>
@@ -359,6 +404,15 @@ export default function JournalPage() {
             <tbody>
               {journalEntries.map(entry => [
                 <tr key={entry.id} className={expandedRows.includes(entry.id) ? 'border-b-0' : 'border-b'}>
+                  {selectMode && (
+                    <td className="p-4 text-center">
+                      <input
+                        type="checkbox"
+                        checked={selectedIds.includes(entry.id)}
+                        onChange={() => handleSelectRow(entry.id)}
+                      />
+                    </td>
+                  )}
                   <td className="px-4 py-3">
                     {format(new Date(entry.entryDate), 'yyyy-MM-dd')}
                   </td>
@@ -482,6 +536,48 @@ export default function JournalPage() {
           onClose={() => setSelectedEntryForEdit(null)}
           onSave={handleSaveEntry}
         />
+      )}
+
+      {/* Delete confirmation modal */}
+      {showDeleteModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+          <div className="bg-white rounded-lg shadow-lg p-6 max-w-sm w-full">
+            <h2 className="text-lg font-semibold mb-4">Confirm Deletion</h2>
+            <p className="mb-6">Are you sure you want to delete {selectedIds.length} selected entr{selectedIds.length === 1 ? 'y' : 'ies'}? This action cannot be undone.</p>
+            <div className="flex justify-end gap-2">
+              <button
+                onClick={() => setShowDeleteModal(false)}
+                className="px-4 py-2 rounded bg-muted hover:bg-muted/70 border"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleBulkDelete}
+                className="px-4 py-2 rounded bg-destructive text-destructive-foreground hover:bg-destructive/90 border"
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {selectMode && (
+        <div className="flex items-center gap-2 mb-2">
+          <button
+            onClick={() => setSelectMode(false)}
+            className="text-sm px-3 py-1 rounded bg-muted hover:bg-muted/70 border"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={() => setShowDeleteModal(true)}
+            className="text-sm px-3 py-1 rounded bg-destructive text-destructive-foreground hover:bg-destructive/90 border"
+            disabled={selectedIds.length === 0}
+          >
+            Delete Selected ({selectedIds.length})
+          </button>
+        </div>
       )}
     </div>
   );

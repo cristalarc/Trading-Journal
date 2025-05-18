@@ -12,6 +12,7 @@ Journal UI & Backend Improvements
 - Filter & Search Improvements:
   - Added a Ticker filter input to the filter panel for quick searching by ticker
   - Resetting filters now also clears the ticker filter
+- Added entry deletion functionality.
 - General Bug Fixes:
   - Removed the Unknown column from Time Table (was used for debugging missing timeframes)
   - Improved error handling and user experience throughout the Journal UI
