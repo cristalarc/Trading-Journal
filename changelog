@@ -1,3 +1,21 @@
+[05/18/2025]
+Journal UI & Backend Improvements
+- Time Table Panel Enhancements:
+  - Added Monthly column to Time Table (now shows Monthly, Weekly, Daily, Hourly)
+  - Expanded Time Table panel to occupy 75% of the screen for better visibility
+  - Improved card stacking and expand/collapse for all timeframe columns
+- Entry Validation & Editing:
+  - Made ticker, timeframe, price, and comments mandatory for all journal entries (server-side validation)
+  - Fixed backend update logic to properly handle decimals and relations (timeframe, pattern) when editing entries
+  - Prevented DecimalError by only converting valid numeric values to Prisma.Decimal
+  - Editing now reliably updates all fields, including clearing support/resistance
+- Filter & Search Improvements:
+  - Added a Ticker filter input to the filter panel for quick searching by ticker
+  - Resetting filters now also clears the ticker filter
+- General Bug Fixes:
+  - Removed the Unknown column from Time Table (was used for debugging missing timeframes)
+  - Improved error handling and user experience throughout the Journal UI
+
 [03/20/2025]
 Card-Based Edit Form Implementation
 - Created New Edit Form Component (JournalEditForm):
@@ -260,3 +278,21 @@ Fixed type issues with component imports
 [02/26/2025]
 - Composer created the foundational files for the MVP app.
 - Ran app with npm run dev and confirmed functionality. We are missing key functionality and UI.
+
+[2025-03-21]
+Journal UI & Backend Improvements
+- Time Table Panel Enhancements:
+  - Added Monthly column to Time Table (now shows Monthly, Weekly, Daily, Hourly)
+  - Expanded Time Table panel to occupy 75% of the screen for better visibility
+  - Improved card stacking and expand/collapse for all timeframe columns
+- Entry Validation & Editing:
+  - Made ticker, timeframe, price, and comments mandatory for all journal entries (server-side validation)
+  - Fixed backend update logic to properly handle decimals and relations (timeframe, pattern) when editing entries
+  - Prevented DecimalError by only converting valid numeric values to Prisma.Decimal
+  - Editing now reliably updates all fields, including clearing support/resistance
+- Filter & Search Improvements:
+  - Added a Ticker filter input to the filter panel for quick searching by ticker
+  - Resetting filters now also clears the ticker filter
+- General Bug Fixes:
+  - Removed the Unknown column from Time Table (was used for debugging missing timeframes)
+  - Improved error handling and user experience throughout the Journal UI

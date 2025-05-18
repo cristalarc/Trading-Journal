@@ -17,9 +17,17 @@ The current structure provides a solid foundation that follows the requirements 
 -- Think through what an entry needs. Status of Retro? Result of Retro?
 
 To add:
+---Data check---
+//Journal View//
+- Ticker typo checker
+- Add required fields for entry: confirmed ticker, price, comment.
+
 ---UI---
 //Journal View//
+- Restrospectives tab. Work on making it functional.
+- How am I going to handle the Time Table when there's too many entries?
 - When clicking on the eye icon, show a panel on the right side that shows the timeline of all comments for all timeframes. See Journal_Entry_On_Click-Sidebar.png
+- During journal entries, the dropdowns have a different look than the rest of the page.
 - Add a pop-up panel when the user clicks the Complete Retrospective button.
 - Add shortcuts to Settings where applicable (Governing Pattern, Timeframe, etc.) when possible.
 - Ensure the design adapts smoothly to smaller screen sizes, such as tablets or mobile devices, by stacking elements or enabling collapsible menus.

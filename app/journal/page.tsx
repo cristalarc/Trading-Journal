@@ -46,13 +46,14 @@ export default function JournalPage() {
 
   const router = useRouter();
   const [showSidePanel, setShowSidePanel] = useState(false);
-  const [selectedEntryId, setSelectedEntryId] = useState<string | null>(null);
+  const [selectedTicker, setSelectedTicker] = useState<string | null>(null);
   const [expandedRows, setExpandedRows] = useState<string[]>([]);
   const [selectedEntryForEdit, setSelectedEntryForEdit] = useState<string | null>(null);
   
   // Filter states
   const [selectedTimeframe, setSelectedTimeframe] = useState<string | null>(null);
   const [showFilters, setShowFilters] = useState(false);
+  const [filterTicker, setFilterTicker] = useState<string>('');
 
   // Fetch journal entries with filters
   const { 
@@ -96,15 +97,15 @@ export default function JournalPage() {
   const resetFilters = () => {
     logger.info('Resetting all filters');
     setSelectedTimeframe(null);
+    setFilterTicker('');
     resetApiFilters();
   };
 
   /**
    * Opens the side panel to view details for a specific entry
    */
-  const handleViewDetails = (id: string) => {
-    logger.debug('Opening side panel for entry', { entryId: id });
-    setSelectedEntryId(id);
+  const handleViewDetails = (ticker: string) => {
+    setSelectedTicker(ticker);
     setShowSidePanel(true);
   };
 
@@ -114,7 +115,7 @@ export default function JournalPage() {
   const closeSidePanel = () => {
     logger.debug('Closing side panel');
     setShowSidePanel(false);
-    setSelectedEntryId(null);
+    setSelectedTicker(null);
   };
 
   /**
@@ -240,6 +241,19 @@ export default function JournalPage() {
           
           <div className="space-y-4">
             <div>
+              <h3 className="text-sm font-medium mb-2">Ticker</h3>
+              <input
+                type="text"
+                placeholder="Enter ticker"
+                value={filterTicker}
+                onChange={e => {
+                  setFilterTicker(e.target.value);
+                  updateFilters({ ticker: e.target.value || undefined });
+                }}
+                className="w-full px-3 py-2 border rounded-md bg-background"
+              />
+            </div>
+            <div>
               <h3 className="text-sm font-medium mb-2">Timeframe</h3>
               <div className="flex flex-wrap gap-2">
                 {timeframes.map(timeframe => (
@@ -348,6 +362,7 @@ export default function JournalPage() {
                       {entry.direction}
                     </span>
                   </td>
+                  <td className="px-4 py-3">{entry.sentiment || '-'}</td>
                   <td className="px-4 py-3">{entry.pattern?.name || '-'}</td>
                   <td className="px-4 py-3">
                     <span className={`px-2 py-0.5 rounded-full text-xs ${
@@ -396,7 +411,7 @@ export default function JournalPage() {
                         <Edit size={16} />
                       </button>
                       <button
-                        onClick={() => handleViewDetails(entry.id)}
+                        onClick={() => handleViewDetails(entry.ticker)}
                         className="text-muted-foreground hover:text-foreground"
                         aria-label="View details"
                       >
@@ -441,10 +456,10 @@ export default function JournalPage() {
       )}
       
       {/* Side panel for viewing entry details */}
-      {showSidePanel && selectedEntryId && (
-        <TimeTablePanel 
-          entryId={selectedEntryId} 
-          onClose={closeSidePanel} 
+      {showSidePanel && selectedTicker && (
+        <TimeTablePanel
+          ticker={selectedTicker}
+          onClose={closeSidePanel}
         />
       )}
 

@@ -78,12 +78,16 @@ export async function createJournalEntry(data: any) {
       throw new Error('Ticker is required');
     }
 
-    if (!data.entryDate) {
-      throw new Error('Entry date is required');
+    if (!data.timeframeId && !data.timeframe) {
+      throw new Error('Timeframe is required');
     }
 
     if (!data.price && data.price !== 0) {
       throw new Error('Price is required');
+    }
+
+    if (!data.comments || data.comments.trim() === '') {
+      throw new Error('Comments are required');
     }
 
     if (!data.direction) {
@@ -177,14 +181,54 @@ export async function createJournalEntry(data: any) {
 /**
  * Update an existing journal entry
  */
-export async function updateJournalEntry(id: string, data: Prisma.JournalEntryUpdateInput) {
+export async function updateJournalEntry(id: string, data: any) {
+  // Build the update data object
+  const updateData: any = {};
+
+  if (data.ticker !== undefined) updateData.ticker = data.ticker;
+  if (data.entryDate !== undefined) updateData.entryDate = data.entryDate;
+
+  if (data.price !== undefined && data.price !== null && data.price !== "") {
+    updateData.price = new Prisma.Decimal(data.price);
+  }
+
+  if (data.direction !== undefined) updateData.direction = data.direction;
+  if (data.sentiment !== undefined) updateData.sentiment = data.sentiment;
+  if (data.comments !== undefined) updateData.comments = data.comments;
+  if (data.isWeeklyOnePagerEligible !== undefined)
+    updateData.isWeeklyOnePagerEligible = data.isWeeklyOnePagerEligible;
+  if (data.retro7DStatus !== undefined)
+    updateData.retro7DStatus = data.retro7DStatus;
+  if (data.retro30DStatus !== undefined)
+    updateData.retro30DStatus = data.retro30DStatus;
+
+  if (data.support !== undefined && data.support !== null && data.support !== "") {
+    updateData.support = new Prisma.Decimal(data.support);
+  } else if (data.support === "" || data.support === null) {
+    updateData.support = undefined;
+  }
+
+  if (data.resistance !== undefined && data.resistance !== null && data.resistance !== "") {
+    updateData.resistance = new Prisma.Decimal(data.resistance);
+  } else if (data.resistance === "" || data.resistance === null) {
+    updateData.resistance = undefined;
+  }
+
+  // Handle relations
+  if (data.timeframeId) {
+    updateData.timeframe = { connect: { id: data.timeframeId } };
+  }
+  if (data.patternId) {
+    updateData.pattern = { connect: { id: data.patternId } };
+  }
+
   return prisma.journalEntry.update({
     where: { id },
-    data,
+    data: updateData,
     include: {
       timeframe: true,
-      pattern: true
-    }
+      pattern: true,
+    },
   });
 }
 
