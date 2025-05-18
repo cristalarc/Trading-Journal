@@ -16,7 +16,8 @@ import {
   X,
   Settings,
   HelpCircle,
-  Loader2
+  Loader2,
+  Bell
 } from "lucide-react";
 import { TimeTablePanel } from "@/components/time-table-panel";
 import { RetrospectiveReminder } from "@/components/retrospective-reminder";
@@ -200,6 +201,17 @@ export default function JournalPage() {
         </div>
         
         <div className="flex items-center gap-2">
+          {/* Bell icon for retrospectives */}
+          <button
+            onClick={handleCompleteRetrospective}
+            className="relative bg-secondary text-secondary-foreground hover:bg-secondary/80 px-3 py-2 rounded-md flex items-center"
+            aria-label="View retrospectives"
+          >
+            <Bell size={18} />
+            {overdueRetrospectives > 0 && (
+              <span className="absolute top-2 right-2 block h-2 w-2 rounded-full bg-red-500 ring-2 ring-background" />
+            )}
+          </button>
           <button 
             onClick={() => setShowFilters(!showFilters)}
             className="bg-secondary text-secondary-foreground hover:bg-secondary/80 px-3 py-2 rounded-md flex items-center gap-2"
