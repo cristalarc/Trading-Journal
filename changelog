@@ -1,4 +1,7 @@
 [05/18/2025]
+Settings UI
+- Fixed the UI for the Manage Patterns and Manage Timeframes view.
+
 Journal UI & Backend Improvements
 - Time Table Panel Enhancements:
   - Added Monthly column to Time Table (now shows Monthly, Weekly, Daily, Hourly)

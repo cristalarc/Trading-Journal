@@ -3,6 +3,8 @@
 import { useState } from 'react';
 import { usePatterns } from '@/lib/hooks/useConfig';
 import { Loader2 } from 'lucide-react';
+import Link from "next/link";
+import { ChevronLeft } from "lucide-react";
 
 export default function PatternsPage() {
   const { patterns, isLoading } = usePatterns();
@@ -16,7 +18,13 @@ export default function PatternsPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 p-6">
+      <div className="flex items-center mb-2">
+        <Link href="/settings" className="text-primary hover:underline flex items-center">
+          <ChevronLeft className="h-4 w-4 mr-1" />
+          Back to Settings
+        </Link>
+      </div>
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-semibold">Manage Patterns</h1>
         <button
