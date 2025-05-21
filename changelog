@@ -4,6 +4,11 @@ Manage Patterns Page
 - Implemented a duplicate name checker for adding a pattern.
 - Fixed Delete Pattern workflow, fully operative now.
 
+Manage Timeframes Page
+- Added functionality for the Add Timeframe button.
+- Implemented a duplicate name checker for adding a timeframe.
+- Fixed Delete Timeframe workflow, fully operative now.
+
 [05/18/2025]
 Settings UI
 - Fixed the UI for the Manage Patterns and Manage Timeframes view.
