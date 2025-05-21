@@ -1,17 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { ChevronLeft, Save } from "lucide-react";
 import { createLogger } from "@/lib/logger";
+import { useTooltips } from "@/lib/hooks/useConfig";
+import { DEFAULT_DIRECTION_TOOLTIP, DEFAULT_SENTIMENT_TOOLTIP, DEFAULT_7D_RETRO_TOOLTIP, DEFAULT_30D_RETRO_TOOLTIP } from "@/lib/default-tooltips";
 
 const logger = createLogger('TooltipsSettingsPage');
-
-// Default tooltip texts
-const DEFAULT_DIRECTION_TOOLTIP = "Direction indicates whether you expect the price to go up (Bullish) or down (Bearish)";
-const DEFAULT_SENTIMENT_TOOLTIP = "Sentiment reflects your overall feeling about the trade based on your analysis";
-const DEFAULT_7D_RETRO_TOOLTIP = "7-day review of the trade outcome and lessons learned";
-const DEFAULT_30D_RETRO_TOOLTIP = "30-day review to evaluate longer-term trade impact and market behavior";
 
 /**
  * TooltipsSettingsPage Component
@@ -23,13 +19,30 @@ const DEFAULT_30D_RETRO_TOOLTIP = "30-day review to evaluate longer-term trade i
  * - Persistence of tooltip text (to be implemented)
  */
 export default function TooltipsSettingsPage() {
-  logger.debug('Initializing TooltipsSettingsPage component');
+  const { tooltips, refreshTooltips } = useTooltips();
 
-  // State for tooltip text with default values
-  const [directionTooltip, setDirectionTooltip] = useState(DEFAULT_DIRECTION_TOOLTIP);
-  const [sentimentTooltip, setSentimentTooltip] = useState(DEFAULT_SENTIMENT_TOOLTIP);
-  const [retro7DTooltip, setRetro7DTooltip] = useState(DEFAULT_7D_RETRO_TOOLTIP);
-  const [retro30DTooltip, setRetro30DTooltip] = useState(DEFAULT_30D_RETRO_TOOLTIP);
+  // Local state for each tooltip
+  const [directionTooltip, setDirectionTooltip] = useState("");
+  const [sentimentTooltip, setSentimentTooltip] = useState("");
+  const [retro7DTooltip, setRetro7DTooltip] = useState("");
+  const [retro30DTooltip, setRetro30DTooltip] = useState("");
+
+  // Flags to prevent resetting input after user types
+  const [hasLoaded, setHasLoaded] = useState(false);
+
+  // Save feedback
+  const [saveSuccess, setSaveSuccess] = useState(false);
+
+  // Set state from backend only on initial load
+  useEffect(() => {
+    if (!hasLoaded) {
+      setDirectionTooltip(tooltips.direction?.text ?? DEFAULT_DIRECTION_TOOLTIP);
+      setSentimentTooltip(tooltips.sentiment?.text ?? DEFAULT_SENTIMENT_TOOLTIP);
+      setRetro7DTooltip(tooltips.retro7D?.text ?? DEFAULT_7D_RETRO_TOOLTIP);
+      setRetro30DTooltip(tooltips.retro30D?.text ?? DEFAULT_30D_RETRO_TOOLTIP);
+      setHasLoaded(true);
+    }
+  }, [tooltips, hasLoaded]);
 
   /**
    * Updates tooltip text with character limit enforcement
@@ -43,21 +56,32 @@ export default function TooltipsSettingsPage() {
    * Saves the current tooltip settings
    * In a real app, this would persist the values to a database
    */
-  const handleSave = () => {
+  const handleSave = async () => {
     logger.info('Saving tooltip settings', {
       direction: directionTooltip,
       sentiment: sentimentTooltip,
       retro7D: retro7DTooltip,
       retro30D: retro30DTooltip
     });
-    
-    // TODO: Implement actual save functionality
-    console.log("Saving tooltips:", { 
-      directionTooltip, 
-      sentimentTooltip,
-      retro7DTooltip,
-      retro30DTooltip
-    });
+
+    try {
+      const res = await fetch('/api/config/tooltips', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          direction: directionTooltip,
+          sentiment: sentimentTooltip,
+          retro7D: retro7DTooltip,
+          retro30D: retro30DTooltip
+        })
+      });
+      if (!res.ok) throw new Error('Failed to save tooltips');
+      await refreshTooltips();
+      setSaveSuccess(true);
+      setTimeout(() => setSaveSuccess(false), 2000);
+    } catch (error) {
+      logger.error('Error saving tooltips:', error);
+    }
   };
 
   // Tooltip input component
@@ -108,6 +132,11 @@ export default function TooltipsSettingsPage() {
         <h1 className="text-3xl font-bold ml-4">Help Tooltips</h1>
       </div>
 
+      {/* Instructional text */}
+      <div className="mb-4 text-muted-foreground text-base">
+        Type in your own tooltip text if you'd like to have your own explanations.
+      </div>
+
       <div className="bg-card p-6 rounded-lg shadow-sm border">
         <div className="space-y-6">
           <TooltipInput
@@ -150,6 +179,8 @@ export default function TooltipsSettingsPage() {
           </div>
         </div>
       </div>
+
+      {saveSuccess && <div className="text-green-600 mb-2">Tooltips saved!</div>}
     </div>
   );
 } 

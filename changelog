@@ -1,4 +1,8 @@
 [05/21/2025]
+Help Tooltips Page
+- Made Tooltip text editable. If no text, it will use the hard coded default value.
+- Fixed functionality of the Save Changes button.
+
 Manage Patterns Page
 - Added functionality for the Add Pattern button.
 - Implemented a duplicate name checker for adding a pattern.

@@ -3,7 +3,8 @@ import {
   getTooltips, 
   createTooltip, 
   updateTooltip, 
-  deleteTooltip 
+  deleteTooltip, 
+  getTooltipByKey 
 } from "@/lib/services/configService";
 
 // GET handler for retrieving all tooltips
@@ -40,6 +41,27 @@ export async function POST(request: Request) {
     console.error('Error creating tooltip:', error);
     return NextResponse.json(
       { error: "Failed to create tooltip" },
+      { status: 500 }
+    );
+  }
+}
+
+export async function PATCH(request: Request) {
+  try {
+    const updates = await request.json(); // { key: text, ... }
+    const results = [];
+    for (const key of Object.keys(updates)) {
+      // Find tooltip by key
+      const tooltip = await getTooltipByKey(key);
+      if (tooltip) {
+        results.push(await updateTooltip(tooltip.id, { text: updates[key] }));
+      }
+    }
+    return NextResponse.json({ success: true, updated: results });
+  } catch (error) {
+    console.error('Error updating tooltips:', error);
+    return NextResponse.json(
+      { error: "Failed to update tooltips" },
       { status: 500 }
     );
   }

@@ -1,3 +1,4 @@
 ---UI---
 - Fix black backgrounds checkboxes during journal entry flow.
 - What does the Time Table "Add Timeframe Analysis button do?
+- Help tooltips resets after every keystroke

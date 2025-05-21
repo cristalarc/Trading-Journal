@@ -29,6 +29,7 @@ import { format } from "date-fns";
 import { formatPrice } from "@/lib/utils";
 import { JournalEditForm } from '@/components/journal-edit-form';
 import { Tooltip } from '@/components/tooltip';
+import { DEFAULT_DIRECTION_TOOLTIP, DEFAULT_SENTIMENT_TOOLTIP, DEFAULT_7D_RETRO_TOOLTIP, DEFAULT_30D_RETRO_TOOLTIP } from "@/lib/default-tooltips";
 
 const logger = createLogger('JournalPage');
 
@@ -367,13 +368,13 @@ export default function JournalPage() {
                 <th className="text-left p-4">
                   <div className="flex items-center gap-2">
                     Direction
-                    <Tooltip text="Direction indicates whether you expect the price to go up (Bullish) or down (Bearish)" />
+                    <Tooltip text={tooltips.direction?.text || DEFAULT_DIRECTION_TOOLTIP} />
                   </div>
                 </th>
                 <th className="text-left p-4">
                   <div className="flex items-center gap-2">
                     Sentiment
-                    <Tooltip text="Sentiment reflects your overall feeling about the trade based on your analysis" />
+                    <Tooltip text={tooltips.sentiment?.text || DEFAULT_SENTIMENT_TOOLTIP} />
                   </div>
                 </th>
                 <th className="text-left p-4">
@@ -389,13 +390,13 @@ export default function JournalPage() {
                 <th className="text-left p-4">
                   <div className="flex items-center gap-2">
                     7D Retro
-                    <Tooltip text="7-day review of the trade outcome and lessons learned" />
+                    <Tooltip text={tooltips.retro7D?.text || DEFAULT_7D_RETRO_TOOLTIP} />
                   </div>
                 </th>
                 <th className="text-left p-4">
                   <div className="flex items-center gap-2">
                     30D Retro
-                    <Tooltip text="30-day review to evaluate longer-term trade impact and market behavior" />
+                    <Tooltip text={tooltips.retro30D?.text || DEFAULT_30D_RETRO_TOOLTIP} />
                   </div>
                 </th>
                 <th className="text-center p-4">Actions</th>
