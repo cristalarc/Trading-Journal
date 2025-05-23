@@ -35,14 +35,19 @@ export default function TooltipsSettingsPage() {
 
   // Set state from backend only on initial load
   useEffect(() => {
-    if (!hasLoaded) {
-      setDirectionTooltip(tooltips.direction?.text ?? DEFAULT_DIRECTION_TOOLTIP);
-      setSentimentTooltip(tooltips.sentiment?.text ?? DEFAULT_SENTIMENT_TOOLTIP);
-      setRetro7DTooltip(tooltips.retro7D?.text ?? DEFAULT_7D_RETRO_TOOLTIP);
-      setRetro30DTooltip(tooltips.retro30D?.text ?? DEFAULT_30D_RETRO_TOOLTIP);
-      setHasLoaded(true);
+    if (tooltips.direction?.text && !directionTooltip) {
+      setDirectionTooltip(tooltips.direction.text);
     }
-  }, [tooltips, hasLoaded]);
+    if (tooltips.sentiment?.text && !sentimentTooltip) {
+      setSentimentTooltip(tooltips.sentiment.text);
+    }
+    if (tooltips.retro7D?.text && !retro7DTooltip) {
+      setRetro7DTooltip(tooltips.retro7D.text);
+    }
+    if (tooltips.retro30D?.text && !retro30DTooltip) {
+      setRetro30DTooltip(tooltips.retro30D.text);
+    }
+  }, [tooltips]);
 
   /**
    * Updates tooltip text with character limit enforcement

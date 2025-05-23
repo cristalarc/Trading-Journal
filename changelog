@@ -1,7 +1,11 @@
+[05/23/2025]
+Help Tooltips Page
+- Quick fix on default tooltip text loading before actual text.
+
 [05/21/2025]
 Help Tooltips Page
 - Made Tooltip text editable. If no text, it will use the hard coded default value.
-- Fixed functionality of the Save Changes button.
+- Fixed functionality of the Save Changes button.S
 
 Manage Patterns Page
 - Added functionality for the Add Pattern button.
