@@ -1,8 +1,5 @@
-- Make sure the add Pattern and add Strategies works.
--- Add deleting functionalities.
-- Connect tooltips to DB
 - Complete the Retrospective functionality and retrospectives view.
-
+- Move to Weekly One Pager, remember Ripper's UI
 
 Implement actual data persistence (database integration)
 Add form validation and submission handling
@@ -11,7 +8,7 @@ Add more advanced filtering and search capabilities
 Create the weekly one-pager view
 Implement notifications for retrospective reminders
 The current structure provides a solid foundation that follows the requirements in the product manager output and can be extended as needed.
-
+Pre-compile the app on opening? Very slow to navigate
 
 - Data Model Design
 -- Think through what an entry needs. Status of Retro? Result of Retro?

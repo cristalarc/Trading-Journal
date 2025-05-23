@@ -26,11 +26,11 @@ export type JournalEntry = {
   resistance?: number;
   comments?: string;
   isWeeklyOnePagerEligible: boolean;
-  retro7DStatus: 'pending' | 'completed';
+  retro7DStatus: 'pending' | 'completed' | 'overdue';
   retro7DCompletedAt?: string | Date;
   retro7DOutcome?: 'win' | 'loss';
   retro7DNotes?: string;
-  retro30DStatus: 'pending' | 'completed';
+  retro30DStatus: 'pending' | 'completed' | 'overdue';
   retro30DCompletedAt?: string | Date;
   retro30DOutcome?: 'win' | 'loss';
   retro30DNotes?: string;
@@ -197,9 +197,11 @@ export function useJournalEntries(initialFilters?: JournalEntryFilters) {
   
   // Function to get overdue retrospectives count
   const getOverdueRetrospectivesCount = useCallback(() => {
-    return entries.filter(
-      entry => entry.retro7DStatus === 'pending' || entry.retro30DStatus === 'pending'
-    ).length;
+    return entries.reduce((count, entry) => {
+      if (entry.retro7DStatus === 'overdue') count++;
+      if (entry.retro30DStatus === 'overdue') count++;
+      return count;
+    }, 0);
   }, [entries]);
   
   return {

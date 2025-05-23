@@ -433,28 +433,40 @@ export default function JournalPage() {
                   <td className="px-4 py-3">{entry.pattern?.name || '-'}</td>
                   <td className="px-4 py-3">
                     <span className={`px-2 py-0.5 rounded-full text-xs ${
-                      entry.retro7DStatus === 'pending'
-                        ? 'bg-yellow-100 text-yellow-800'
-                        : entry.retro7DOutcome === 'win'
-                          ? 'bg-green-100 text-green-800'
-                          : 'bg-red-100 text-red-800'
+                      entry.retro7DStatus === 'overdue'
+                        ? 'bg-amber-300 text-amber-900'
+                        : entry.retro7DStatus === 'pending'
+                          ? 'bg-yellow-100 text-yellow-800'
+                          : entry.retro7DOutcome === 'win'
+                            ? 'bg-green-100 text-green-800'
+                            : 'bg-red-100 text-red-800'
                     }`}>
-                      {entry.retro7DStatus === 'pending' 
-                        ? 'Pending' 
-                        : entry.retro7DOutcome === 'win' ? 'Win' : 'Loss'}
+                      {entry.retro7DStatus === 'overdue'
+                        ? 'Overdue'
+                        : entry.retro7DStatus === 'pending'
+                          ? 'Pending'
+                          : entry.retro7DStatus === 'completed'
+                            ? (entry.retro7DOutcome === 'win' ? 'Win' : 'Loss')
+                            : ''}
                     </span>
                   </td>
                   <td className="px-4 py-3">
                     <span className={`px-2 py-0.5 rounded-full text-xs ${
-                      entry.retro30DStatus === 'pending'
-                        ? 'bg-yellow-100 text-yellow-800'
-                        : entry.retro30DOutcome === 'win'
-                          ? 'bg-green-100 text-green-800'
-                          : 'bg-red-100 text-red-800'
+                      entry.retro30DStatus === 'overdue'
+                        ? 'bg-amber-300 text-amber-900'
+                        : entry.retro30DStatus === 'pending'
+                          ? 'bg-yellow-100 text-yellow-800'
+                          : entry.retro30DOutcome === 'win'
+                            ? 'bg-green-100 text-green-800'
+                            : 'bg-red-100 text-red-800'
                     }`}>
-                      {entry.retro30DStatus === 'pending' 
-                        ? 'Pending' 
-                        : entry.retro30DOutcome === 'win' ? 'Win' : 'Loss'}
+                      {entry.retro30DStatus === 'overdue'
+                        ? 'Overdue'
+                        : entry.retro30DStatus === 'pending'
+                          ? 'Pending'
+                          : entry.retro30DStatus === 'completed'
+                            ? (entry.retro30DOutcome === 'win' ? 'Win' : 'Loss')
+                            : ''}
                     </span>
                   </td>
                   <td className="px-4 py-3 text-center">

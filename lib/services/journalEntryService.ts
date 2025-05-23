@@ -4,7 +4,7 @@
  */
 
 import { prisma } from '@/lib/db';
-import { Prisma } from '@prisma/client';
+import { Prisma, RetroStatus } from '@prisma/client';
 
 /**
  * Get all journal entries with optional filtering
@@ -16,6 +16,9 @@ export async function getAllJournalEntries(options?: {
   direction?: 'Bullish' | 'Bearish';
   sentiment?: 'Bullish' | 'Neutral' | 'Bearish';
 }) {
+  // Update overdue statuses before fetching
+  await getOverdueRetrospectivesCount();
+
   // Build filter conditions based on provided options
   const where: Prisma.JournalEntryWhereInput = {};
   
@@ -251,17 +254,34 @@ export async function getOverdueRetrospectivesCount() {
   const thirtyDaysAgo = new Date();
   thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
   
+  // Update only 7D retrospectives that are overdue
+  await prisma.journalEntry.updateMany({
+    where: {
+      entryDate: { lte: sevenDaysAgo },
+      retro7DStatus: RetroStatus.pending
+    },
+    data: {
+      retro7DStatus: RetroStatus.overdue
+    }
+  });
+
+  // Update only 30D retrospectives that are overdue
+  await prisma.journalEntry.updateMany({
+    where: {
+      entryDate: { lte: thirtyDaysAgo },
+      retro30DStatus: RetroStatus.pending
+    },
+    data: {
+      retro30DStatus: RetroStatus.overdue
+    }
+  });
+
+  // Then count the overdue retrospectives
   return prisma.journalEntry.count({
     where: {
       OR: [
-        {
-          entryDate: { lte: sevenDaysAgo },
-          retro7DStatus: 'pending'
-        },
-        {
-          entryDate: { lte: thirtyDaysAgo },
-          retro30DStatus: 'pending'
-        }
+        { retro7DStatus: RetroStatus.overdue },
+        { retro30DStatus: RetroStatus.overdue }
       ]
     }
   });

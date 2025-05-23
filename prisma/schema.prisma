@@ -98,6 +98,7 @@ enum Sentiment {
 enum RetroStatus {
   pending
   completed
+  overdue
 }
 
 enum RetroOutcome {

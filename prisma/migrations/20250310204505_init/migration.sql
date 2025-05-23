@@ -5,7 +5,7 @@ CREATE TYPE "Direction" AS ENUM ('Bullish', 'Bearish');
 CREATE TYPE "Sentiment" AS ENUM ('Bullish', 'Neutral', 'Bearish');
 
 -- CreateEnum
-CREATE TYPE "RetroStatus" AS ENUM ('pending', 'completed');
+CREATE TYPE "RetroStatus" AS ENUM ('pending', 'completed', 'overdue');
 
 -- CreateEnum
 CREATE TYPE "RetroOutcome" AS ENUM ('win', 'loss');
