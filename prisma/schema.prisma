@@ -63,6 +63,7 @@ model JournalEntry {
   support                Decimal?      @db.Decimal(10, 2)
   resistance             Decimal?      @db.Decimal(10, 2)
   comments               String?
+  gamePlan               String?       @map("game_plan")
   isWeeklyOnePagerEligible Boolean     @default(false) @map("is_weekly_one_pager_eligible")
   
   // Retrospectives

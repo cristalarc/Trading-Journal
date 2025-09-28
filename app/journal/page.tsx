@@ -18,7 +18,9 @@ import {
   HelpCircle,
   Loader2,
   Bell,
-  Trash2
+  Trash2,
+  CheckSquare,
+  Square
 } from "lucide-react";
 import { TimeTablePanel } from "@/components/time-table-panel";
 import { RetrospectiveReminder } from "@/components/retrospective-reminder";
@@ -190,6 +192,20 @@ export default function JournalPage() {
     setSelectedIds([]);
     setSelectMode(false);
     refreshEntries();
+  };
+
+  /**
+   * Toggles the Weekly One Pager eligibility for an entry
+   */
+  const handleToggleWeeklyOnePager = async (entryId: string, currentStatus: boolean) => {
+    logger.debug('Toggling Weekly One Pager eligibility', { entryId, currentStatus });
+    try {
+      await updateEntry(entryId, { isWeeklyOnePagerEligible: !currentStatus });
+      // No need to refresh entries as the local state will be updated by the hook
+    } catch (error) {
+      console.error('Error toggling Weekly One Pager eligibility:', error);
+      // You could add a toast notification here if desired
+    }
   };
 
   logger.info('Rendering journal page', { 
@@ -495,6 +511,21 @@ export default function JournalPage() {
                         aria-label="View details"
                       >
                         <Eye size={16} />
+                      </button>
+                      <button
+                        onClick={() => handleToggleWeeklyOnePager(entry.id, entry.isWeeklyOnePagerEligible)}
+                        className={`hover:text-foreground transition-colors ${
+                          entry.isWeeklyOnePagerEligible 
+                            ? 'text-green-600 hover:text-green-700' 
+                            : 'text-muted-foreground'
+                        }`}
+                        aria-label={entry.isWeeklyOnePagerEligible ? "Remove from Weekly One Pager" : "Add to Weekly One Pager"}
+                      >
+                        {entry.isWeeklyOnePagerEligible ? (
+                          <CheckSquare size={16} />
+                        ) : (
+                          <Square size={16} />
+                        )}
                       </button>
                     </div>
                   </td>

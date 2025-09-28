@@ -1,4 +1,40 @@
-## [Unreleased] - Retrospective Feature Overhaul
+## [09/28/2025] - Weekly One Pager Feature Implementation
+
+### Added
+- **Weekly One Pager page** (`/weekly-one-pager`) with dedicated navigation tab for prioritizing weekly trading entries.
+- **Game Plan field** in database schema (`gamePlan` column) for storing trading strategies and plans.
+- **Quick toggle functionality** in Journal dashboard Actions column to mark entries as eligible for Weekly One Pager.
+- **Auto-save Game Plan feature** with debounced saving (1-second delay) and visual feedback indicators.
+- **Custom confirmation modal** for "Clear All Entries" action with app-consistent design and keyboard support.
+- **API endpoints** for Weekly One Pager operations:
+  - `GET /api/weekly-one-pager` - Fetch eligible entries
+  - `PATCH /api/weekly-one-pager` - Update game plans and eligibility
+  - `DELETE /api/weekly-one-pager` - Clear all entries
+- **Visual indicators** for Weekly One Pager eligibility:
+  - Green CheckSquare icon when eligible
+  - Gray Square icon when not eligible
+  - Color-coded direction and sentiment badges
+
+### Changed
+- **Navigation structure** updated to include "Weekly One Pager" tab between Journal and Analysis.
+- **Journal dashboard Actions column** now includes checkbox icon for quick Weekly One Pager eligibility toggle.
+- **Database schema** updated with `gamePlan` field and proper mapping (`game_plan` column).
+- **Service layer** enhanced with Weekly One Pager specific functions and game plan handling.
+
+### Fixed
+- **Game Plan auto-save bug** where changes weren't persisting due to incorrect comparison logic in `onBlur` handler.
+- **Browser confirmation dialog** replaced with custom modal for better UX consistency.
+- **State management** improved with proper original value tracking for game plan changes.
+
+### Notes
+- Weekly One Pager entries are identified by `isWeeklyOnePagerEligible` boolean field.
+- Game plans are automatically cleared when entries are removed from Weekly One Pager.
+- Custom modal supports Escape key and click-outside-to-close functionality.
+- All Weekly One Pager features integrate seamlessly with existing Journal functionality.
+
+---
+
+## [Previous] - Retrospective Feature Overhaul
 
 ### Added
 - Overdue status (`overdue`) to the `RetroStatus` enum in the Prisma schema and database.

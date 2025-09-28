@@ -39,6 +39,7 @@ export interface JournalEntry {
   keySupportLevel: number | null;
   keyResistanceLevel: number | null;
   comments: string;
+  gamePlan: string | null;
   weeklyOnePagerToggle: boolean;
   isFollowUpToOpenTrade: boolean;
   retrospective7D: RetrospectiveOutcome;

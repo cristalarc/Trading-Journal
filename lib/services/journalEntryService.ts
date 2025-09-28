@@ -15,6 +15,7 @@ export async function getAllJournalEntries(options?: {
   ticker?: string;
   direction?: 'Bullish' | 'Bearish';
   sentiment?: 'Bullish' | 'Neutral' | 'Bearish';
+  isWeeklyOnePagerEligible?: boolean;
 }) {
   // Update overdue statuses before fetching
   await getOverdueRetrospectivesCount();
@@ -43,6 +44,10 @@ export async function getAllJournalEntries(options?: {
   
   if (options?.sentiment) {
     where.sentiment = options.sentiment;
+  }
+  
+  if (options?.isWeeklyOnePagerEligible !== undefined) {
+    where.isWeeklyOnePagerEligible = options.isWeeklyOnePagerEligible;
   }
   
   // Fetch entries with related timeframe and pattern data
@@ -117,6 +122,7 @@ export async function createJournalEntry(data: any) {
       direction: data.direction,
       sentiment: data.sentiment,
       comments: data.comments,
+      gamePlan: data.gamePlan,
       isWeeklyOnePagerEligible: data.isWeeklyOnePagerEligible,
       retro7DStatus: data.retro7DStatus,
       retro30DStatus: data.retro30DStatus,
@@ -198,6 +204,7 @@ export async function updateJournalEntry(id: string, data: any) {
   if (data.direction !== undefined) updateData.direction = data.direction;
   if (data.sentiment !== undefined) updateData.sentiment = data.sentiment;
   if (data.comments !== undefined) updateData.comments = data.comments;
+  if (data.gamePlan !== undefined) updateData.gamePlan = data.gamePlan;
   if (data.isWeeklyOnePagerEligible !== undefined)
     updateData.isWeeklyOnePagerEligible = data.isWeeklyOnePagerEligible;
   if (data.retro7DStatus !== undefined)
@@ -283,6 +290,39 @@ export async function getOverdueRetrospectivesCount() {
         { retro7DStatus: RetroStatus.overdue },
         { retro30DStatus: RetroStatus.overdue }
       ]
+    }
+  });
+}
+
+/**
+ * Get entries eligible for Weekly One Pager
+ */
+export async function getWeeklyOnePagerEntries() {
+  return prisma.journalEntry.findMany({
+    where: {
+      isWeeklyOnePagerEligible: true
+    },
+    include: {
+      timeframe: true,
+      pattern: true
+    },
+    orderBy: {
+      entryDate: 'desc'
+    }
+  });
+}
+
+/**
+ * Clear all entries from Weekly One Pager (set isWeeklyOnePagerEligible to false)
+ */
+export async function clearAllWeeklyOnePagerEntries() {
+  return prisma.journalEntry.updateMany({
+    where: {
+      isWeeklyOnePagerEligible: true
+    },
+    data: {
+      isWeeklyOnePagerEligible: false,
+      gamePlan: null // Clear game plans when removing from weekly one pager
     }
   });
 }
