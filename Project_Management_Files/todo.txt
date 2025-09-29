@@ -1,12 +1,39 @@
+- Implement Sources and Strategies
+- Add Strategies
+- Implement the Ideas component
 - Complete the Retrospective functionality and retrospectives view.
-- Move to Weekly One Pager, remember Ripper's UI
+- Implement Trades
+-- Implement tags
 
-Implement actual data persistence (database integration)
+
+Let's now implement the Ideas component.
+Ideas should be its own dashboard, located under Weekly One Pager.
+
+The objective of the Ideas dashboard is to be a place where draft trade Ideas are written down (including conditions for the trade), and when eventually the trade conditions are met the system will flag that conditions are met for entry.
+
+Ideas should expire within one year of their creation. A setting in the Settings page should be added to tweak this one year period to any other timeframe.
+
+For the Ideas to be implemented, we need to implement the concept of Strategies. Just like Patterns and Timeframe, this should be a list of "tags" that can be added through the Settings page. Strategies should have a name, description, status and Actions just like Patterns currently has. For reference, Strategies serve purpose of being able to track which trading Strategies are being considered for any Idea/Trade and in the future analyze which strategies are most succesful.
+
+Also, add Sources, which is a list of possible Sources of Ideas like Twitter, Journal, etc. I should be able to add Sources just like Patterns. We would need a name, description and whether is active or not, as well as be able to edit, just like the Patterns page.
+
+Ideas should have its own database.
+
+Ideas should include a Ticker, Date (default to current day the idea is submitted), Current Price (of the stock), Target Entry (in $), Target Price (in $), Stop (in $), RR Ratio (risk reward ratio to be calculated with inputted target entry, price and stop), Trade Direction (long or short), Strategy (drop down list of Strategies), Market (Bullish or Bearish), Relative (numerical inputed value which indicates relative strenght of the stock), 1hr Trend (Bullish or Bearish), 1hr cloud (Above or Below), Intended Position (number of stocks), To Win Money (intended position * [target price - target entry]. In absolute value to account for both Long or Short trades), Money Risk (relationship bewtween target entry and stop, with different formulas to account for Long or Short trades), Notes (free text), Sourced (dropdown list of Sources), Quality (list of HQ, MQ, LQ), Status (whether Active or not) and lastly Trade ID (to use in the future to connect Ideas and Trades).
+
+In the Settings, add a list of stocks that will behave differently for Ideas profit calculations.
+
+
+
+
+
 Add form validation and submission handling
 Implement authentication for user accounts
 Add more advanced filtering and search capabilities
-Create the weekly one-pager view
-Implement notifications for retrospective reminders
+
+Add automatic calculation of Quality depending on the strategy.
+
+
 The current structure provides a solid foundation that follows the requirements in the product manager output and can be extended as needed.
 Pre-compile the app on opening? Very slow to navigate
 
