@@ -62,7 +62,7 @@ model StrategyConfig {
   id                        String        @id @default(uuid())
   name                      String        @db.VarChar(100)
   tagValue                  String        @db.VarChar(50) @map("tag_value")
-  sourcingValue             String?       @db.VarChar(100) @map("sourcing_value")
+  sourcingValues            Json?         @map("sourcing_values")
   recordingSystem           String?       @db.VarChar(500) @map("recording_system")
   enterCriteria             String?       @db.VarChar(500) @map("enter_criteria")
   earlyEntryCriteria        String?       @db.VarChar(500) @map("early_entry_criteria")

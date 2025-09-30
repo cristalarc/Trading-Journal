@@ -1,13 +1,13 @@
 "use client";
 
 import { useState } from 'react';
-import { X, Loader2 } from 'lucide-react';
+import { X, Loader2, Plus, Settings, Trash2 } from 'lucide-react';
 
 interface Strategy {
   id: string;
   name: string;
   tagValue: string;
-  sourcingValue?: string;
+  sourcingValues?: string[];
   recordingSystem?: string;
   enterCriteria?: string;
   earlyEntryCriteria?: string;
@@ -29,6 +29,7 @@ interface StrategyEditModalProps {
   onSave: (strategyId: string | null, data: Partial<Strategy>) => Promise<void>;
   existingNames?: string[];
   availableSources?: string[];
+  onAddSource?: (sourceName: string) => Promise<void>;
 }
 
 export function StrategyEditModal({ 
@@ -36,13 +37,17 @@ export function StrategyEditModal({
   onClose, 
   onSave, 
   existingNames = [],
-  availableSources = []
+  availableSources = [],
+  onAddSource
 }: StrategyEditModalProps) {
   const [isSaving, setIsSaving] = useState(false);
+  const [showAddSourceModal, setShowAddSourceModal] = useState(false);
+  const [newSourceName, setNewSourceName] = useState('');
+  const [isAddingSource, setIsAddingSource] = useState(false);
   const [formData, setFormData] = useState({
     name: strategy?.name || '',
     tagValue: strategy?.tagValue || '',
-    sourcingValue: strategy?.sourcingValue || '',
+    sourcingValues: strategy?.sourcingValues || [],
     recordingSystem: strategy?.recordingSystem || '',
     enterCriteria: strategy?.enterCriteria || '',
     earlyEntryCriteria: strategy?.earlyEntryCriteria || '',
@@ -77,6 +82,38 @@ export function StrategyEditModal({
         ...prev,
         [name]: value
       }));
+    }
+  };
+
+  const handleAddSourcingValue = (sourceName: string) => {
+    if (sourceName && !formData.sourcingValues.includes(sourceName)) {
+      setFormData(prev => ({
+        ...prev,
+        sourcingValues: [...prev.sourcingValues, sourceName]
+      }));
+    }
+  };
+
+  const handleRemoveSourcingValue = (sourceName: string) => {
+    setFormData(prev => ({
+      ...prev,
+      sourcingValues: prev.sourcingValues.filter(s => s !== sourceName)
+    }));
+  };
+
+  const handleQuickAddSource = async () => {
+    if (!newSourceName.trim() || !onAddSource) return;
+    
+    setIsAddingSource(true);
+    try {
+      await onAddSource(newSourceName.trim());
+      handleAddSourcingValue(newSourceName.trim());
+      setNewSourceName('');
+      setShowAddSourceModal(false);
+    } catch (error) {
+      console.error('Error adding source:', error);
+    } finally {
+      setIsAddingSource(false);
     }
   };
 
@@ -143,21 +180,63 @@ export function StrategyEditModal({
             </div>
 
             <div>
-              <label htmlFor="sourcingValue" className="block text-sm font-medium mb-1">
-                Sourcing Value
+              <label className="block text-sm font-medium mb-1">
+                Sourcing Values
               </label>
-              <select
-                id="sourcingValue"
-                name="sourcingValue"
-                value={formData.sourcingValue}
-                onChange={handleChange}
-                className="w-full px-3 py-2 border rounded-md bg-background"
-              >
-                <option value="">Select a source...</option>
-                {availableSources.map(source => (
-                  <option key={source} value={source}>{source}</option>
-                ))}
-              </select>
+              <div className="space-y-2">
+                {/* Selected Sources */}
+                {formData.sourcingValues.length > 0 && (
+                  <div className="flex flex-wrap gap-2">
+                    {formData.sourcingValues.map(source => (
+                      <span
+                        key={source}
+                        className="inline-flex items-center px-2 py-1 bg-primary/10 text-primary rounded-md text-sm"
+                      >
+                        {source}
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveSourcingValue(source)}
+                          className="ml-1 text-primary/70 hover:text-primary"
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      </span>
+                    ))}
+                  </div>
+                )}
+                
+                {/* Add Source Dropdown */}
+                <div className="flex gap-2">
+                  <select
+                    onChange={(e) => {
+                      if (e.target.value) {
+                        handleAddSourcingValue(e.target.value);
+                        e.target.value = '';
+                      }
+                    }}
+                    className="flex-1 px-3 py-2 border rounded-md bg-background"
+                    defaultValue=""
+                  >
+                    <option value="">Add a source...</option>
+                    {availableSources
+                      .filter(source => !formData.sourcingValues.includes(source))
+                      .map(source => (
+                        <option key={source} value={source}>{source}</option>
+                      ))}
+                  </select>
+                  
+                  {onAddSource && (
+                    <button
+                      type="button"
+                      onClick={() => setShowAddSourceModal(true)}
+                      className="px-3 py-2 border border-primary text-primary rounded-md hover:bg-primary/10 flex items-center gap-1"
+                      title="Quick add new source"
+                    >
+                      <Settings className="h-4 w-4" />
+                    </button>
+                  )}
+                </div>
+              </div>
             </div>
 
             <div>
@@ -371,6 +450,62 @@ export function StrategyEditModal({
           </div>
         </form>
       </div>
+
+      {/* Quick Add Source Modal */}
+      {showAddSourceModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-background p-6 rounded-lg shadow-lg max-w-md w-full">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-semibold">Quick Add Source</h3>
+              <button
+                onClick={() => setShowAddSourceModal(false)}
+                className="text-muted-foreground hover:text-foreground"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+            
+            <div className="space-y-4">
+              <div>
+                <label htmlFor="newSourceName" className="block text-sm font-medium mb-1">
+                  Source Name
+                </label>
+                <input
+                  type="text"
+                  id="newSourceName"
+                  value={newSourceName}
+                  onChange={(e) => setNewSourceName(e.target.value)}
+                  className="w-full px-3 py-2 border rounded-md bg-background"
+                  placeholder="Enter source name..."
+                  autoFocus
+                />
+              </div>
+              
+              <div className="flex justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => setShowAddSourceModal(false)}
+                  className="px-4 py-2 bg-secondary text-secondary-foreground rounded-md hover:bg-secondary/90"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={handleQuickAddSource}
+                  disabled={!newSourceName.trim() || isAddingSource}
+                  className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 disabled:opacity-50"
+                >
+                  {isAddingSource ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    'Add Source'
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

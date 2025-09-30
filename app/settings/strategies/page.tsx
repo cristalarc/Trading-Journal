@@ -103,6 +103,27 @@ export default function StrategiesPage() {
     }
   };
 
+  const handleAddSource = async (sourceName: string) => {
+    try {
+      const response = await fetch("/api/config/sources", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: sourceName,
+          description: `Quick added from strategies`,
+          displayOrder: sources.length + 1,
+          isActive: true
+        }),
+      });
+      if (!response.ok) throw new Error("Failed to create source");
+      // Refresh sources list
+      window.location.reload(); // Simple refresh for now
+    } catch (error) {
+      console.error("Error creating source:", error);
+      throw error;
+    }
+  };
+
   return (
     <div className="space-y-6 p-6">
       <div className="flex items-center mb-2">
@@ -193,7 +214,22 @@ export default function StrategiesPage() {
                 )}
                 <td className="p-4">{strategy.name}</td>
                 <td className="p-4">{strategy.tagValue}</td>
-                <td className="p-4">{strategy.sourcingValue || '-'}</td>
+                <td className="p-4">
+                  {strategy.sourcingValues && strategy.sourcingValues.length > 0 ? (
+                    <div className="flex flex-wrap gap-1">
+                      {strategy.sourcingValues.map((source, index) => (
+                        <span
+                          key={index}
+                          className="inline-block px-2 py-1 bg-primary/10 text-primary rounded text-xs"
+                        >
+                          {source}
+                        </span>
+                      ))}
+                    </div>
+                  ) : (
+                    '-'
+                  )}
+                </td>
                 <td className="p-4">{strategy.retrospectivePeriod ? `${strategy.retrospectivePeriod} days` : '-'}</td>
                 <td className="p-4">
                   <span className={`px-2 py-1 rounded-full text-xs ${
@@ -259,6 +295,7 @@ export default function StrategiesPage() {
           onClose={() => setEditingStrategy(null)}
           onSave={handleSaveStrategy}
           availableSources={sources.map(s => s.name)}
+          onAddSource={handleAddSource}
         />
       )}
 
@@ -269,6 +306,7 @@ export default function StrategiesPage() {
           onSave={handleAddStrategy}
           existingNames={strategies.map(s => s.name)}
           availableSources={sources.map(s => s.name)}
+          onAddSource={handleAddSource}
         />
       )}
     </div>

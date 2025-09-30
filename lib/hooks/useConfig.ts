@@ -39,7 +39,7 @@ export type Strategy = {
   id: string;
   name: string;
   tagValue: string;
-  sourcingValue?: string;
+  sourcingValues?: string[];
   recordingSystem?: string;
   enterCriteria?: string;
   earlyEntryCriteria?: string;
