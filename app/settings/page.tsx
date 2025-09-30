@@ -72,6 +72,40 @@ export default function SettingsPage() {
           </p>
         </div>
 
+        {/* Sources Configuration Section */}
+        <div className="bg-card p-6 rounded-lg shadow-sm border">
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-xl font-semibold">Sources</h2>
+            <Link
+              href="/settings/sources"
+              className="text-sm text-primary hover:underline"
+              onClick={() => logger.debug('Navigating to sources settings')}
+            >
+              Manage Sources
+            </Link>
+          </div>
+          <p className="text-sm text-muted-foreground">
+            Configure the available sources of trading ideas (e.g., Twitter, Journal, etc.) for tagging and tracking.
+          </p>
+        </div>
+
+        {/* Strategies Configuration Section */}
+        <div className="bg-card p-6 rounded-lg shadow-sm border">
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-xl font-semibold">Strategies</h2>
+            <Link
+              href="/settings/strategies"
+              className="text-sm text-primary hover:underline"
+              onClick={() => logger.debug('Navigating to strategies settings')}
+            >
+              Manage Strategies
+            </Link>
+          </div>
+          <p className="text-sm text-muted-foreground">
+            Define your trading strategies with entry/exit criteria, risk management rules, and retrospective periods.
+          </p>
+        </div>
+
         {/* Help Tooltips Configuration Section */}
         <div className="bg-card p-6 rounded-lg shadow-sm border">
           <div className="flex justify-between items-center mb-4">

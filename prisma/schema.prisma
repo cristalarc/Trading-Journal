@@ -46,6 +46,42 @@ model TooltipConfig {
   @@map("tooltip_configs")
 }
 
+model SourceConfig {
+  id            String        @id @default(uuid())
+  name          String        @db.VarChar(100)
+  description   String?
+  displayOrder  Int
+  isActive      Boolean       @default(true)
+  createdAt     DateTime      @default(now()) @map("created_at")
+  updatedAt     DateTime      @updatedAt @map("updated_at")
+
+  @@map("source_configs")
+}
+
+model StrategyConfig {
+  id                        String        @id @default(uuid())
+  name                      String        @db.VarChar(100)
+  tagValue                  String        @db.VarChar(50) @map("tag_value")
+  sourcingValue             String?       @db.VarChar(100) @map("sourcing_value")
+  recordingSystem           String?       @db.VarChar(500) @map("recording_system")
+  enterCriteria             String?       @db.VarChar(500) @map("enter_criteria")
+  earlyEntryCriteria        String?       @db.VarChar(500) @map("early_entry_criteria")
+  exitCriteria              String?       @db.VarChar(500) @map("exit_criteria")
+  confirmationCriteria      String?       @db.VarChar(500) @map("confirmation_criteria")
+  qualityConsiderations     String?       @db.VarChar(500) @map("quality_considerations")
+  qualityCriteria           String?       @db.VarChar(500) @map("quality_criteria")
+  kaizen                    String?       @db.VarChar(500)
+  executionReviewCriteria   String?       @db.VarChar(500) @map("execution_review_criteria")
+  retrospectivePeriod       Int?          @map("retrospective_period")
+  taggingSystem             String?       @db.VarChar(500) @map("tagging_system")
+  displayOrder              Int
+  isActive                  Boolean       @default(true)
+  createdAt                 DateTime      @default(now()) @map("created_at")
+  updatedAt                 DateTime      @updatedAt @map("updated_at")
+
+  @@map("strategy_configs")
+}
+
 // Main Journal Entries Table
 model JournalEntry {
   id                      String        @id @default(uuid())

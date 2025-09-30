@@ -27,6 +27,34 @@ export type Tooltip = {
 
 export type TooltipMap = Record<string, Tooltip>;
 
+export type Source = {
+  id: string;
+  name: string;
+  description?: string;
+  displayOrder: number;
+  isActive: boolean;
+};
+
+export type Strategy = {
+  id: string;
+  name: string;
+  tagValue: string;
+  sourcingValue?: string;
+  recordingSystem?: string;
+  enterCriteria?: string;
+  earlyEntryCriteria?: string;
+  exitCriteria?: string;
+  confirmationCriteria?: string;
+  qualityConsiderations?: string;
+  qualityCriteria?: string;
+  kaizen?: string;
+  executionReviewCriteria?: string;
+  retrospectivePeriod?: number;
+  taggingSystem?: string;
+  displayOrder: number;
+  isActive: boolean;
+};
+
 export function useTimeframes() {
   const [timeframes, setTimeframes] = useState<Timeframe[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -138,5 +166,81 @@ export function useTooltips() {
     isLoading,
     error,
     refreshTooltips: fetchTooltips
+  };
+}
+
+export function useSources() {
+  const [sources, setSources] = useState<Source[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  
+  const fetchSources = useCallback(async () => {
+    setIsLoading(true);
+    setError(null);
+    
+    try {
+      const response = await fetch('/api/config/sources');
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch sources');
+      }
+      
+      const data = await response.json();
+      setSources(data);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'An unknown error occurred');
+      console.error('Error fetching sources:', err);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+  
+  useEffect(() => {
+    fetchSources();
+  }, [fetchSources]);
+  
+  return {
+    sources,
+    isLoading,
+    error,
+    refreshSources: fetchSources
+  };
+}
+
+export function useStrategies() {
+  const [strategies, setStrategies] = useState<Strategy[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  
+  const fetchStrategies = useCallback(async () => {
+    setIsLoading(true);
+    setError(null);
+    
+    try {
+      const response = await fetch('/api/config/strategies');
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch strategies');
+      }
+      
+      const data = await response.json();
+      setStrategies(data);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'An unknown error occurred');
+      console.error('Error fetching strategies:', err);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+  
+  useEffect(() => {
+    fetchStrategies();
+  }, [fetchStrategies]);
+  
+  return {
+    strategies,
+    isLoading,
+    error,
+    refreshStrategies: fetchStrategies
   };
 } 

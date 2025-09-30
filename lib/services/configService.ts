@@ -152,4 +152,106 @@ export async function deleteTooltip(id: string) {
   return prisma.tooltipConfig.delete({
     where: { id }
   });
+}
+
+/**
+ * Get all active source configurations
+ */
+export async function getSources() {
+  return prisma.sourceConfig.findMany({
+    where: {
+      isActive: true
+    },
+    orderBy: {
+      displayOrder: 'asc'
+    }
+  });
+}
+
+/**
+ * Get a source by ID
+ */
+export async function getSourceById(id: string) {
+  return prisma.sourceConfig.findUnique({
+    where: { id }
+  });
+}
+
+/**
+ * Create a new source configuration
+ */
+export async function createSource(data: Prisma.SourceConfigCreateInput) {
+  return prisma.sourceConfig.create({
+    data
+  });
+}
+
+/**
+ * Update an existing source configuration
+ */
+export async function updateSource(id: string, data: Prisma.SourceConfigUpdateInput) {
+  return prisma.sourceConfig.update({
+    where: { id },
+    data
+  });
+}
+
+/**
+ * Delete a source configuration
+ */
+export async function deleteSource(id: string) {
+  return prisma.sourceConfig.delete({
+    where: { id }
+  });
+}
+
+/**
+ * Get all active strategy configurations
+ */
+export async function getStrategies() {
+  return prisma.strategyConfig.findMany({
+    where: {
+      isActive: true
+    },
+    orderBy: {
+      displayOrder: 'asc'
+    }
+  });
+}
+
+/**
+ * Get a strategy by ID
+ */
+export async function getStrategyById(id: string) {
+  return prisma.strategyConfig.findUnique({
+    where: { id }
+  });
+}
+
+/**
+ * Create a new strategy configuration
+ */
+export async function createStrategy(data: Prisma.StrategyConfigCreateInput) {
+  return prisma.strategyConfig.create({
+    data
+  });
+}
+
+/**
+ * Update an existing strategy configuration
+ */
+export async function updateStrategy(id: string, data: Prisma.StrategyConfigUpdateInput) {
+  return prisma.strategyConfig.update({
+    where: { id },
+    data
+  });
+}
+
+/**
+ * Delete a strategy configuration
+ */
+export async function deleteStrategy(id: string) {
+  return prisma.strategyConfig.delete({
+    where: { id }
+  });
 } 
