@@ -1,9 +1,8 @@
-- Implement Sources and Strategies
-- Add Strategies
-- Implement the Ideas component
-- Complete the Retrospective functionality and retrospectives view.
 - Implement Trades
 -- Implement tags
+- Complete the Retrospective functionality and retrospectives view.
+- Implement API 
+- Implement Reminders
 
 
 Let's now implement the Ideas component.

@@ -22,6 +22,7 @@ import {
 import { createLogger } from "@/lib/logger";
 import { format } from "date-fns";
 import { formatPrice } from "@/lib/utils";
+import { IdeasEditForm } from "@/components/ideas-edit-form";
 
 const logger = createLogger('IdeasPage');
 
@@ -640,6 +641,15 @@ export default function IdeasPage() {
             Delete Selected ({selectedIds.length})
           </button>
         </div>
+      )}
+
+      {/* Edit form modal */}
+      {selectedIdeaForEdit && (
+        <IdeasEditForm
+          idea={ideas.find(i => i.id === selectedIdeaForEdit)}
+          onClose={() => setSelectedIdeaForEdit(null)}
+          onSave={handleSaveIdea}
+        />
       )}
     </div>
   );
