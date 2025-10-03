@@ -33,6 +33,7 @@ export default function NewIdeaPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [strategies, setStrategies] = useState<Strategy[]>([]);
   const [sources, setSources] = useState<Source[]>([]);
+  const [stockMultipliers, setStockMultipliers] = useState<Array<{ticker: string, multiplier: number}>>([]);
   const [error, setError] = useState<string | null>(null);
 
   // Form state
@@ -54,13 +55,14 @@ export default function NewIdeaPage() {
     quality: 'MQ' as 'HQ' | 'MQ' | 'LQ'
   });
 
-  // Fetch strategies and sources
+  // Fetch strategies, sources, and stock multipliers
   useEffect(() => {
     const fetchConfigs = async () => {
       try {
-        const [strategiesRes, sourcesRes] = await Promise.all([
+        const [strategiesRes, sourcesRes, settingsRes] = await Promise.all([
           fetch('/api/config/strategies'),
-          fetch('/api/config/sources')
+          fetch('/api/config/sources'),
+          fetch('/api/ideas/settings')
         ]);
         
         if (strategiesRes.ok) {
@@ -71,6 +73,11 @@ export default function NewIdeaPage() {
         if (sourcesRes.ok) {
           const sourcesData = await sourcesRes.json();
           setSources(sourcesData);
+        }
+
+        if (settingsRes.ok) {
+          const settingsData = await settingsRes.json();
+          setStockMultipliers(settingsData.stockMultipliers || []);
         }
       } catch (error) {
         console.error('Error fetching configs:', error);
@@ -102,18 +109,25 @@ export default function NewIdeaPage() {
       rrRatio = risk > 0 ? reward / risk : 0;
     }
 
+    // Get multiplier for the ticker
+    let multiplier = 1;
+    const stockMultiplier = stockMultipliers.find(sm => sm.ticker === formData.ticker);
+    if (stockMultiplier) {
+      multiplier = stockMultiplier.multiplier;
+    }
+
     let toWinMoney = 0;
     if (formData.tradeDirection === 'Long') {
-      toWinMoney = Math.abs((targetPrice - targetEntry) * intendedPosition);
+      toWinMoney = Math.abs((targetPrice - targetEntry) * intendedPosition * multiplier);
     } else {
-      toWinMoney = Math.abs((targetEntry - targetPrice) * intendedPosition);
+      toWinMoney = Math.abs((targetEntry - targetPrice) * intendedPosition * multiplier);
     }
 
     let moneyRisk = 0;
     if (formData.tradeDirection === 'Long') {
-      moneyRisk = Math.abs((targetEntry - stop) * intendedPosition);
+      moneyRisk = Math.abs((targetEntry - stop) * intendedPosition * multiplier);
     } else {
-      moneyRisk = Math.abs((stop - targetEntry) * intendedPosition);
+      moneyRisk = Math.abs((stop - targetEntry) * intendedPosition * multiplier);
     }
 
     return { rrRatio, toWinMoney, moneyRisk };
@@ -377,7 +391,17 @@ export default function NewIdeaPage() {
 
         {/* Calculated Fields */}
         <div className="bg-muted/30 p-4 rounded-lg">
-          <h3 className="text-lg font-semibold mb-4">Calculated Fields</h3>
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="text-lg font-semibold">Calculated Fields</h3>
+            {(() => {
+              const stockMultiplier = stockMultipliers.find(sm => sm.ticker === formData.ticker);
+              return stockMultiplier ? (
+                <div className="text-sm text-blue-600 bg-blue-50 px-2 py-1 rounded">
+                  Multiplier: {stockMultiplier.multiplier}x for {formData.ticker}
+                </div>
+              ) : null;
+            })()}
+          </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
               <label className="block text-sm font-medium mb-2">RR Ratio</label>
