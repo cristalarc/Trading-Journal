@@ -14,13 +14,10 @@ import {
   Settings,
   Loader2,
   Trash2,
-  CheckSquare,
-  Square,
   TrendingUp,
   TrendingDown,
   DollarSign,
   Target,
-  AlertTriangle
 } from "lucide-react";
 import { createLogger } from "@/lib/logger";
 import { format } from "date-fns";
@@ -144,19 +141,6 @@ export default function IdeasPage() {
     }
   };
 
-  // Mark expired ideas
-  const markExpiredIdeas = async () => {
-    try {
-      const response = await fetch('/api/ideas?markExpired=true');
-      if (!response.ok) {
-        throw new Error('Failed to mark expired ideas');
-      }
-      await fetchIdeas();
-      await fetchStats();
-    } catch (error) {
-      console.error('Error marking expired ideas:', error);
-    }
-  };
 
   useEffect(() => {
     fetchIdeas();
@@ -227,19 +211,6 @@ export default function IdeasPage() {
     await fetchStats();
   };
 
-  const handleToggleStatus = async (ideaId: string, currentStatus: string) => {
-    const newStatus = currentStatus === 'active' ? 'inactive' : 'active';
-    try {
-      await fetch(`/api/ideas/${ideaId}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: newStatus })
-      });
-      await fetchIdeas();
-    } catch (error) {
-      console.error('Error toggling idea status:', error);
-    }
-  };
 
   const getQualityColor = (quality: string) => {
     switch (quality) {
@@ -299,7 +270,7 @@ export default function IdeasPage() {
                 <p className="text-sm text-muted-foreground">Expired</p>
                 <p className="text-2xl font-bold text-red-600">{stats.expired}</p>
               </div>
-              <AlertTriangle className="h-8 w-8 text-red-600" />
+              <Target className="h-8 w-8 text-red-600" />
             </div>
           </div>
           <div className="bg-card p-4 rounded-lg shadow-sm border">
@@ -333,13 +304,6 @@ export default function IdeasPage() {
           >
             <Trash2 size={16} />
             <span>Delete Ideas</span>
-          </button>
-          <button 
-            onClick={markExpiredIdeas}
-            className="bg-orange-600 text-white hover:bg-orange-700 px-4 py-2 rounded-md flex items-center gap-2"
-          >
-            <AlertTriangle size={16} />
-            <span>Mark Expired</span>
           </button>
           <button 
             onClick={() => {
@@ -563,21 +527,6 @@ export default function IdeasPage() {
                         aria-label="Edit idea"
                       >
                         <Edit size={16} />
-                      </button>
-                      <button
-                        onClick={() => handleToggleStatus(idea.id, idea.status)}
-                        className={`hover:text-foreground transition-colors ${
-                          idea.status === 'active' 
-                            ? 'text-green-600 hover:text-green-700' 
-                            : 'text-muted-foreground'
-                        }`}
-                        aria-label={idea.status === 'active' ? "Deactivate idea" : "Activate idea"}
-                      >
-                        {idea.status === 'active' ? (
-                          <CheckSquare size={16} />
-                        ) : (
-                          <Square size={16} />
-                        )}
                       </button>
                     </div>
                   </td>
