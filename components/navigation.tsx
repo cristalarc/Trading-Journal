@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, BookOpen, BarChart2, Settings, FileText } from "lucide-react";
+import { Home, BookOpen, BarChart2, Settings, FileText, Lightbulb } from "lucide-react";
 
 export function Navigation() {
   const pathname = usePathname();
@@ -55,6 +55,19 @@ export function Navigation() {
           >
             <FileText className="mr-2 h-5 w-5" />
             <span>Weekly One Pager</span>
+          </Link>
+        </li>
+        <li>
+          <Link 
+            href="/ideas" 
+            className={`flex items-center p-2 rounded-md transition-colors ${
+              isActive("/ideas") || pathname.startsWith("/ideas/") 
+                ? "bg-sidebar-accent text-sidebar-accent-foreground" 
+                : "hover:bg-sidebar-accent/50"
+            }`}
+          >
+            <Lightbulb className="mr-2 h-5 w-5" />
+            <span>Ideas</span>
           </Link>
         </li>
         <li>

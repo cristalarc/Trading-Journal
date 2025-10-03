@@ -54,6 +54,7 @@ model SourceConfig {
   isActive      Boolean       @default(true)
   createdAt     DateTime      @default(now()) @map("created_at")
   updatedAt     DateTime      @updatedAt @map("updated_at")
+  ideas         Idea[]
 
   @@map("source_configs")
 }
@@ -78,8 +79,29 @@ model StrategyConfig {
   isActive                  Boolean       @default(true)
   createdAt                 DateTime      @default(now()) @map("created_at")
   updatedAt                 DateTime      @updatedAt @map("updated_at")
+  ideas                     Idea[]
 
   @@map("strategy_configs")
+}
+
+// Ideas Configuration
+model IdeasExpiryConfig {
+  id          String   @id @default(uuid())
+  expiryDays  Int      @default(365) @map("expiry_days")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  @@map("ideas_expiry_config")
+}
+
+model StockMultiplierConfig {
+  id          String   @id @default(uuid())
+  ticker      String   @unique @db.VarChar(20)
+  multiplier  Decimal  @db.Decimal(10, 2)
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@map("stock_multiplier_configs")
 }
 
 // Main Journal Entries Table
@@ -120,6 +142,43 @@ model JournalEntry {
   @@index([patternId])
 }
 
+// Ideas Table
+model Idea {
+  id                String        @id @default(uuid())
+  createdAt         DateTime      @default(now()) @map("created_at")
+  updatedAt         DateTime      @updatedAt @map("updated_at")
+  ticker            String        @db.VarChar(20)
+  date              DateTime      @default(now())
+  currentPrice      Decimal       @map("current_price") @db.Decimal(10, 2)
+  targetEntry       Decimal       @map("target_entry") @db.Decimal(10, 2)
+  targetPrice       Decimal       @map("target_price") @db.Decimal(10, 2)
+  stop              Decimal       @db.Decimal(10, 2)
+  rrRatio           Decimal       @map("rr_ratio") @db.Decimal(5, 2)
+  tradeDirection    TradeDirection @map("trade_direction")
+  strategy          StrategyConfig? @relation(fields: [strategyId], references: [id])
+  strategyId        String?       @map("strategy_id")
+  market            MarketDirection
+  relative          Decimal       @db.Decimal(5, 2)
+  oneHourTrend      TrendDirection @map("one_hour_trend")
+  oneHourCloud      CloudPosition @map("one_hour_cloud")
+  intendedPosition  Int           @map("intended_position")
+  toWinMoney        Decimal       @map("to_win_money") @db.Decimal(12, 2)
+  moneyRisk         Decimal       @map("money_risk") @db.Decimal(12, 2)
+  notes             String?
+  sourced           SourceConfig? @relation(fields: [sourceId], references: [id])
+  sourceId          String?       @map("source_id")
+  quality           Quality
+  status            IdeaStatus    @default(active)
+  tradeId           String?       @map("trade_id")
+  expiresAt         DateTime      @map("expires_at")
+
+  @@map("ideas")
+  @@index([ticker])
+  @@index([date])
+  @@index([status])
+  @@index([expiresAt])
+}
+
 // Enums
 enum Direction {
   Bullish
@@ -141,4 +200,37 @@ enum RetroStatus {
 enum RetroOutcome {
   win
   loss
+}
+
+// Ideas Enums
+enum TradeDirection {
+  Long
+  Short
+}
+
+enum MarketDirection {
+  Bullish
+  Bearish
+}
+
+enum TrendDirection {
+  Bullish
+  Bearish
+}
+
+enum CloudPosition {
+  Above
+  Below
+}
+
+enum Quality {
+  HQ
+  MQ
+  LQ
+}
+
+enum IdeaStatus {
+  active
+  inactive
+  expired
 } 

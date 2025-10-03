@@ -106,6 +106,23 @@ export default function SettingsPage() {
           </p>
         </div>
 
+        {/* Ideas Configuration Section */}
+        <div className="bg-card p-6 rounded-lg shadow-sm border">
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-xl font-semibold">Ideas Settings</h2>
+            <Link
+              href="/settings/ideas"
+              className="text-sm text-primary hover:underline"
+              onClick={() => logger.debug('Navigating to ideas settings')}
+            >
+              Manage Ideas Settings
+            </Link>
+          </div>
+          <p className="text-sm text-muted-foreground">
+            Configure ideas expiry settings and stock multipliers for futures trading (ES, MES, etc.).
+          </p>
+        </div>
+
         {/* Help Tooltips Configuration Section */}
         <div className="bg-card p-6 rounded-lg shadow-sm border">
           <div className="flex justify-between items-center mb-4">
