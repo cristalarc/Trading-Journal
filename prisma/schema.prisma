@@ -84,6 +84,19 @@ model StrategyConfig {
   @@map("strategy_configs")
 }
 
+model TagConfig {
+  id            String        @id @default(uuid())
+  name          String        @db.VarChar(100)
+  category      String        @db.VarChar(50)
+  description   String?       @db.VarChar(500)
+  displayOrder  Int
+  isActive      Boolean       @default(true)
+  createdAt     DateTime      @default(now()) @map("created_at")
+  updatedAt     DateTime      @updatedAt @map("updated_at")
+
+  @@map("tag_configs")
+}
+
 // Ideas Configuration
 model IdeasExpiryConfig {
   id          String   @id @default(uuid())

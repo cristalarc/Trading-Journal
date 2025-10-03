@@ -55,6 +55,15 @@ export type Strategy = {
   isActive: boolean;
 };
 
+export type Tag = {
+  id: string;
+  name: string;
+  category: string;
+  description?: string;
+  displayOrder: number;
+  isActive: boolean;
+};
+
 export function useTimeframes() {
   const [timeframes, setTimeframes] = useState<Timeframe[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -242,5 +251,43 @@ export function useStrategies() {
     isLoading,
     error,
     refreshStrategies: fetchStrategies
+  };
+}
+
+export function useTags() {
+  const [tags, setTags] = useState<Tag[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  
+  const fetchTags = useCallback(async () => {
+    setIsLoading(true);
+    setError(null);
+    
+    try {
+      const response = await fetch('/api/config/tags');
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch tags');
+      }
+      
+      const data = await response.json();
+      setTags(data);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'An unknown error occurred');
+      console.error('Error fetching tags:', err);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+  
+  useEffect(() => {
+    fetchTags();
+  }, [fetchTags]);
+  
+  return {
+    tags,
+    isLoading,
+    error,
+    refreshTags: fetchTags
   };
 } 
