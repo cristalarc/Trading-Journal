@@ -1,34 +1,21 @@
 - Implement Trades
--- Implement tags
-- Complete the Retrospective functionality and retrospectives view.
+-- Implement the import module of trades. All trades, long or short, come in as Avg Buy.
+-- Update Status to WIN or LOSE depending on result.
+
+To test:
+Full form tweaking, especially values that could contradic themselves
+Import functionality
+
+Fix: 
+Multiple trades not grouping up as same trade.
+
 - Implement API 
-- Implement Reminders
-
-
-Now let's implement the Trade Log component.
-
-The Trade Log is a log that will house all the trades I have done which will then be processed to ensure proper assignment of Strategies, Sources and other things are attached to them for then used by the Analytics or Retrospective components.
-
-The Trade Log should contain the following datapopints:
-Status (OPEN, CLOSED)*
-Trade ID (an arbitrary ID to be created. Increasing in number for every trade created)*
-Ticker (Manually input, or fetched via import)*
-Sourced (Source dropdown list, or fetched via import)*
-Size (Manually input, or fetched via import)*
-Open Date (Manually input, or fetched via import)*
-Close Date (Manually input, or fetched via import)
-- If there's a Close Date, then the Status should be updated to Closed
-Setup 1 (*
-
-* Everything that contains an asterisk is mandatory for creation
-
-
-
-A Trade can be imported in three different ways:
-1- Manually, by inputting the information.
-2- Via import of a Tradersync file, attaching sample file.
-3- Via import of a Thinkorswim file, attaching sample file.
-Some files will contain more data than other, it's important to recognize what's missing and ask the user to complete information.
+-- Implement Best Exit
+- Complete the Retrospective functionality and retrospectives view.
+- Marge Retrospective with API capabilities
+- Implement Reminders with SMS or other high visibility
+- Implement Positions and Thesis (modules where I can have my positions and build investment thesis for them)
+- Implement Thinkorswim import.
 
 
 

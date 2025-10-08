@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, BookOpen, BarChart2, Settings, FileText, Lightbulb } from "lucide-react";
+import { Home, BookOpen, BarChart2, Settings, FileText, Lightbulb, TrendingUp } from "lucide-react";
 
 export function Navigation() {
   const pathname = usePathname();
@@ -68,6 +68,19 @@ export function Navigation() {
           >
             <Lightbulb className="mr-2 h-5 w-5" />
             <span>Ideas</span>
+          </Link>
+        </li>
+        <li>
+          <Link 
+            href="/trades" 
+            className={`flex items-center p-2 rounded-md transition-colors ${
+              isActive("/trades") || pathname.startsWith("/trades/") 
+                ? "bg-sidebar-accent text-sidebar-accent-foreground" 
+                : "hover:bg-sidebar-accent/50"
+            }`}
+          >
+            <TrendingUp className="mr-2 h-5 w-5" />
+            <span>Trade Log</span>
           </Link>
         </li>
         <li>

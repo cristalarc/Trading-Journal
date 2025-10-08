@@ -55,6 +55,7 @@ model SourceConfig {
   createdAt     DateTime      @default(now()) @map("created_at")
   updatedAt     DateTime      @updatedAt @map("updated_at")
   ideas         Idea[]
+  trades        Trade[]
 
   @@map("source_configs")
 }
@@ -93,6 +94,20 @@ model TagConfig {
   isActive      Boolean       @default(true)
   createdAt     DateTime      @default(now()) @map("created_at")
   updatedAt     DateTime      @updatedAt @map("updated_at")
+  
+  // Trade relations
+  tradesSetup1  Trade[]       @relation("TradeSetup1")
+  tradesSetup2  Trade[]       @relation("TradeSetup2")
+  tradesSetup3  Trade[]       @relation("TradeSetup3")
+  tradesSetup4  Trade[]       @relation("TradeSetup4")
+  tradesSetup5  Trade[]       @relation("TradeSetup5")
+  tradesSetup6  Trade[]       @relation("TradeSetup6")
+  tradesSetup7  Trade[]       @relation("TradeSetup7")
+  tradesMistake1 Trade[]      @relation("TradeMistake1")
+  tradesMistake2 Trade[]      @relation("TradeMistake2")
+  tradesMistake3 Trade[]      @relation("TradeMistake3")
+  tradesMistake4 Trade[]      @relation("TradeMistake4")
+  tradesMistake5 Trade[]      @relation("TradeMistake5")
 
   @@map("tag_configs")
 }
@@ -246,4 +261,129 @@ enum IdeaStatus {
   active
   inactive
   expired
+}
+
+// Trade Log Models
+model Trade {
+  id                String        @id @default(uuid())
+  createdAt         DateTime      @default(now()) @map("created_at")
+  updatedAt         DateTime      @updatedAt @map("updated_at")
+  
+  // Required fields (marked with *)
+  status            TradeStatus   @default(OPEN)
+  tradeId           Int           @unique @map("trade_id") // Auto-incrementing ID
+  ticker            String        @db.VarChar(20)
+  source            SourceConfig? @relation(fields: [sourceId], references: [id])
+  sourceId          String?       @map("source_id")
+  size              Decimal       @db.Decimal(12, 2)
+  openDate          DateTime      @map("open_date")
+  
+  // Optional fields
+  closeDate         DateTime?     @map("close_date")
+  
+  // Setup tags (1-7)
+  setup1            TagConfig?    @relation("TradeSetup1", fields: [setup1Id], references: [id])
+  setup1Id          String?     @map("setup_1_id")
+  setup2            TagConfig?    @relation("TradeSetup2", fields: [setup2Id], references: [id])
+  setup2Id          String?     @map("setup_2_id")
+  setup3            TagConfig?    @relation("TradeSetup3", fields: [setup3Id], references: [id])
+  setup3Id          String?     @map("setup_3_id")
+  setup4            TagConfig?    @relation("TradeSetup4", fields: [setup4Id], references: [id])
+  setup4Id          String?     @map("setup_4_id")
+  setup5            TagConfig?    @relation("TradeSetup5", fields: [setup5Id], references: [id])
+  setup5Id          String?     @map("setup_5_id")
+  setup6            TagConfig?    @relation("TradeSetup6", fields: [setup6Id], references: [id])
+  setup6Id          String?     @map("setup_6_id")
+  setup7            TagConfig?    @relation("TradeSetup7", fields: [setup7Id], references: [id])
+  setup7Id          String?     @map("setup_7_id")
+  
+  // Mistake tags (1-5)
+  mistake1          TagConfig?    @relation("TradeMistake1", fields: [mistake1Id], references: [id])
+  mistake1Id        String?     @map("mistake_1_id")
+  mistake2          TagConfig?    @relation("TradeMistake2", fields: [mistake2Id], references: [id])
+  mistake2Id        String?     @map("mistake_2_id")
+  mistake3          TagConfig?    @relation("TradeMistake3", fields: [mistake3Id], references: [id])
+  mistake3Id        String?     @map("mistake_3_id")
+  mistake4          TagConfig?    @relation("TradeMistake4", fields: [mistake4Id], references: [id])
+  mistake4Id        String?     @map("mistake_4_id")
+  mistake5          TagConfig?    @relation("TradeMistake5", fields: [mistake5Id], references: [id])
+  mistake5Id        String?     @map("mistake_5_id")
+  
+  // Price fields
+  entryPrice        Decimal?      @map("entry_price") @db.Decimal(10, 2)
+  exitPrice         Decimal?      @map("exit_price") @db.Decimal(10, 2)
+  avgBuy            Decimal?      @map("avg_buy") @db.Decimal(10, 2)
+  avgSell           Decimal?      @map("avg_sell") @db.Decimal(10, 2)
+  
+  // Required fields
+  side              TradeSide
+  type              TradeType
+  
+  // Calculated fields
+  netReturn         Decimal?      @map("net_return") @db.Decimal(12, 2)
+  netReturnPercent  Decimal?      @map("net_return_percent") @db.Decimal(8, 4)
+  mae               Decimal?      @db.Decimal(10, 2) // Maximum Adverse Excursion
+  mfe               Decimal?      @db.Decimal(10, 2) // Maximum Favorable Excursion
+  bestExitDollar    Decimal?      @map("best_exit_dollar") @db.Decimal(12, 2)
+  bestExitPercent   Decimal?      @map("best_exit_percent") @db.Decimal(8, 4)
+  missedExit        Decimal?      @map("missed_exit") @db.Decimal(12, 2)
+  
+  // Import tracking
+  importSource      String?       @map("import_source") @db.VarChar(50) // 'manual', 'tradersync', 'thinkorswim'
+  importData        Json?         @map("import_data") // Store original import data
+  
+  // Sub-orders for multiple executions
+  subOrders         TradeSubOrder[]
+  
+  @@map("trades")
+  @@index([tradeId])
+  @@index([ticker])
+  @@index([status])
+  @@index([openDate])
+  @@index([closeDate])
+}
+
+model TradeSubOrder {
+  id                String        @id @default(uuid())
+  createdAt         DateTime      @default(now()) @map("created_at")
+  updatedAt         DateTime      @updatedAt @map("updated_at")
+  
+  trade             Trade         @relation(fields: [tradeId], references: [id], onDelete: Cascade)
+  tradeId           String        @map("trade_id")
+  
+  // Order details
+  orderType         SubOrderType  @map("order_type")
+  quantity          Decimal       @db.Decimal(12, 2)
+  price             Decimal       @db.Decimal(10, 2)
+  orderDate         DateTime      @map("order_date")
+  
+  // Optional fields
+  notes             String?
+  
+  @@map("trade_sub_orders")
+  @@index([tradeId])
+  @@index([orderDate])
+}
+
+// Trade Enums
+enum TradeStatus {
+  OPEN
+  CLOSED
+}
+
+enum TradeSide {
+  LONG
+  SHORT
+}
+
+enum TradeType {
+  SHARE
+  OPTION
+}
+
+enum SubOrderType {
+  BUY
+  SELL
+  ADD_TO_POSITION
+  REDUCE_POSITION
 } 
