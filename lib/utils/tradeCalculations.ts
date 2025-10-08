@@ -66,20 +66,22 @@ export function calculateNetReturnPercent(input: TradeCalculationInput): number 
 export function calculateBestExitDollar(input: TradeCalculationInput): number {
   const { side, size, avgBuy, entryPrice, mfe } = input;
   
+  // Only calculate if we have valid MFE data
   if (!mfe || mfe <= 0) {
     return 0;
   }
   
   const buyPrice = avgBuy || entryPrice;
-  if (!buyPrice) {
+  if (!buyPrice || buyPrice <= 0) {
     return 0;
   }
   
-  if (side === TradeSide.LONG) {
-    return mfe * size;
-  } else {
-    return mfe * size;
+  if (!size || size <= 0) {
+    return 0;
   }
+  
+  // Calculate the dollar amount of the MFE
+  return mfe * size;
 }
 
 /**
@@ -88,9 +90,14 @@ export function calculateBestExitDollar(input: TradeCalculationInput): number {
 export function calculateBestExitPercent(input: TradeCalculationInput): number {
   const { size, avgBuy, entryPrice } = input;
   const bestExitDollar = calculateBestExitDollar(input);
-  const buyPrice = avgBuy || entryPrice;
   
-  if (!buyPrice || buyPrice === 0) {
+  // Only calculate if we have a valid best exit dollar amount
+  if (bestExitDollar <= 0) {
+    return 0;
+  }
+  
+  const buyPrice = avgBuy || entryPrice;
+  if (!buyPrice || buyPrice <= 0 || !size || size <= 0) {
     return 0;
   }
   
@@ -103,6 +110,11 @@ export function calculateBestExitPercent(input: TradeCalculationInput): number {
 export function calculateMissedExit(input: TradeCalculationInput): number {
   const netReturn = calculateNetReturn(input);
   const bestExitDollar = calculateBestExitDollar(input);
+  
+  // Only calculate missed exit if we have a valid best exit value
+  if (bestExitDollar <= 0) {
+    return 0;
+  }
   
   return bestExitDollar - netReturn;
 }

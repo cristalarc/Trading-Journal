@@ -146,18 +146,18 @@ export async function createTrade(data: any) {
         : typeof data.size === 'number' 
           ? new Prisma.Decimal(data.size.toString())
           : data.size,
-      openDate: data.openDate,
+      openDate: new Date(data.openDate + 'T00:00:00'), // Force local timezone
       side: data.side,
       type: data.type,
-      status: data.status || TradeStatus.OPEN,
+      status: data.status || 'OPEN',
       importSource: data.importSource || 'manual',
       importData: data.importData
     };
 
     // Handle optional fields
     if (data.closeDate) {
-      formattedData.closeDate = data.closeDate;
-      formattedData.status = TradeStatus.CLOSED;
+      formattedData.closeDate = new Date(data.closeDate + 'T00:00:00'); // Force local timezone
+      // Status will be determined after calculations
     }
 
     if (data.sourceId) {
@@ -200,6 +200,22 @@ export async function createTrade(data: any) {
     formattedData.bestExitDollar = new Prisma.Decimal(calculatedMetrics.bestExitDollar);
     formattedData.bestExitPercent = new Prisma.Decimal(calculatedMetrics.bestExitPercent);
     formattedData.missedExit = new Prisma.Decimal(calculatedMetrics.missedExit);
+    
+    // Determine WIN/LOSS status if trade is closed
+    if (data.closeDate) {
+      // Use calculated net return or try to calculate from prices
+      let netReturn = calculatedMetrics.netReturn;
+      if (netReturn === 0 && data.avgBuy && data.avgSell && data.size) {
+        // Calculate net return if not already calculated
+        const buyPrice = parseFloat(data.avgBuy.toString());
+        const sellPrice = parseFloat(data.avgSell.toString());
+        const size = parseFloat(data.size.toString());
+        netReturn = data.side === 'LONG' 
+          ? (sellPrice - buyPrice) * size
+          : (buyPrice - sellPrice) * size;
+      }
+      formattedData.status = netReturn >= 0 ? 'WIN' : 'LOSS';
+    }
     
     // Handle MAE and MFE if provided
     if (data.mae) {
@@ -271,10 +287,17 @@ export async function updateTrade(id: string, data: any) {
   // Handle basic fields
   if (data.ticker !== undefined) updateData.ticker = data.ticker;
   if (data.size !== undefined) updateData.size = new Prisma.Decimal(data.size);
-  if (data.openDate !== undefined) updateData.openDate = data.openDate;
+  if (data.openDate !== undefined) {
+    updateData.openDate = new Date(data.openDate + 'T00:00:00'); // Force local timezone
+  }
   if (data.closeDate !== undefined) {
-    updateData.closeDate = data.closeDate;
-    updateData.status = TradeStatus.CLOSED;
+    if (data.closeDate) {
+      updateData.closeDate = new Date(data.closeDate + 'T00:00:00'); // Force local timezone
+      // Status will be determined after calculations
+    } else {
+      updateData.closeDate = null;
+      updateData.status = 'OPEN';
+    }
   }
   if (data.side !== undefined) updateData.side = data.side;
   if (data.type !== undefined) updateData.type = data.type;
@@ -317,6 +340,60 @@ export async function updateTrade(id: string, data: any) {
         : { disconnect: true };
     }
   });
+
+  // If we're adding a close date, determine WIN/LOSS status before updating
+  if (data.closeDate && data.closeDate !== undefined) {
+    // Get current trade data to calculate status
+    const currentTrade = await prisma.trade.findUnique({
+      where: { id },
+      include: {
+        subOrders: {
+          orderBy: {
+            orderDate: 'asc'
+          }
+        }
+      }
+    });
+
+    if (currentTrade) {
+      // Calculate net return to determine status
+      let netReturn = 0;
+      
+      // Try to calculate from avgBuy/avgSell if available
+      if (data.avgBuy && data.avgSell && data.size) {
+        const buyPrice = parseFloat(data.avgBuy.toString());
+        const sellPrice = parseFloat(data.avgSell.toString());
+        const size = parseFloat(data.size.toString());
+        netReturn = data.side === 'LONG' 
+          ? (sellPrice - buyPrice) * size
+          : (buyPrice - sellPrice) * size;
+      } else if (currentTrade.avgBuy && currentTrade.avgSell && currentTrade.size) {
+        const buyPrice = currentTrade.avgBuy.toNumber();
+        const sellPrice = currentTrade.avgSell.toNumber();
+        const size = currentTrade.size.toNumber();
+        netReturn = currentTrade.side === 'LONG' 
+          ? (sellPrice - buyPrice) * size
+          : (buyPrice - sellPrice) * size;
+      } else if (data.entryPrice && data.exitPrice && data.size) {
+        const entryPrice = parseFloat(data.entryPrice.toString());
+        const exitPrice = parseFloat(data.exitPrice.toString());
+        const size = parseFloat(data.size.toString());
+        netReturn = data.side === 'LONG' 
+          ? (exitPrice - entryPrice) * size
+          : (entryPrice - exitPrice) * size;
+      } else if (currentTrade.entryPrice && currentTrade.exitPrice && currentTrade.size) {
+        const entryPrice = currentTrade.entryPrice.toNumber();
+        const exitPrice = currentTrade.exitPrice.toNumber();
+        const size = currentTrade.size.toNumber();
+        netReturn = currentTrade.side === 'LONG' 
+          ? (exitPrice - entryPrice) * size
+          : (entryPrice - exitPrice) * size;
+      }
+
+      // Set status based on net return
+      updateData.status = netReturn >= 0 ? 'WIN' : 'LOSS';
+    }
+  }
 
   const trade = await prisma.trade.update({
     where: { id },
@@ -421,6 +498,22 @@ export async function calculateTradeMetrics(tradeId: string) {
   updateData.bestExitDollar = new Prisma.Decimal(calculatedMetrics.bestExitDollar);
   updateData.bestExitPercent = new Prisma.Decimal(calculatedMetrics.bestExitPercent);
   updateData.missedExit = new Prisma.Decimal(calculatedMetrics.missedExit);
+  
+  // Determine WIN/LOSS status if trade is closed
+  if (trade.closeDate) {
+    // Use calculated net return or try to calculate from prices
+    let netReturn = calculatedMetrics.netReturn;
+    if (netReturn === 0 && trade.avgBuy && trade.avgSell && trade.size) {
+      // Calculate net return if not already calculated
+      const buyPrice = trade.avgBuy.toNumber();
+      const sellPrice = trade.avgSell.toNumber();
+      const size = trade.size.toNumber();
+      netReturn = trade.side === 'LONG' 
+        ? (sellPrice - buyPrice) * size
+        : (buyPrice - sellPrice) * size;
+    }
+    updateData.status = netReturn >= 0 ? 'WIN' : 'LOSS';
+  }
 
   // Calculate MAE and MFE from sub-orders if available and not already set
   if (trade.subOrders && trade.subOrders.length > 0 && (!trade.mae || !trade.mfe)) {

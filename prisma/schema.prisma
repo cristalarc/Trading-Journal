@@ -369,6 +369,8 @@ model TradeSubOrder {
 enum TradeStatus {
   OPEN
   CLOSED
+  WIN
+  LOSS
 }
 
 enum TradeSide {

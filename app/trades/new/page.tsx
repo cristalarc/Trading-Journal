@@ -100,8 +100,8 @@ export default function NewTradePage() {
       const submitData = {
         ...formData,
         size: parseFloat(formData.size),
-        openDate: new Date(formData.openDate),
-        closeDate: formData.closeDate ? new Date(formData.closeDate) : undefined,
+        openDate: formData.openDate, // Keep as string, let service handle conversion
+        closeDate: formData.closeDate || undefined, // Keep as string, let service handle conversion
         entryPrice: formData.entryPrice ? parseFloat(formData.entryPrice) : undefined,
         exitPrice: formData.exitPrice ? parseFloat(formData.exitPrice) : undefined,
         avgBuy: formData.avgBuy ? parseFloat(formData.avgBuy) : undefined,

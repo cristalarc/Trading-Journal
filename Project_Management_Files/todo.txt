@@ -1,10 +1,5 @@
 - Implement Trades
 -- Implement the import module of trades. All trades, long or short, come in as Avg Buy.
--- Update Status to WIN or LOSE depending on result.
-
-To test:
-Full form tweaking, especially values that could contradic themselves
-Import functionality
 
 Fix: 
 Multiple trades not grouping up as same trade.

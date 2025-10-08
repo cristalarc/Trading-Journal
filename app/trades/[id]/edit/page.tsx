@@ -22,7 +22,7 @@ interface Trade {
   id: string;
   tradeId: number;
   ticker: string;
-  status: 'OPEN' | 'CLOSED';
+  status: 'OPEN' | 'CLOSED' | 'WIN' | 'LOSS';
   side: 'LONG' | 'SHORT';
   type: 'SHARE' | 'OPTION';
   size: number;
@@ -174,8 +174,8 @@ export default function EditTradePage() {
       const submitData = {
         ...formData,
         size: parseFloat(formData.size),
-        openDate: new Date(formData.openDate),
-        closeDate: formData.closeDate ? new Date(formData.closeDate) : undefined,
+        openDate: formData.openDate, // Keep as string, let service handle conversion
+        closeDate: formData.closeDate || undefined, // Keep as string, let service handle conversion
         entryPrice: formData.entryPrice ? parseFloat(formData.entryPrice) : undefined,
         exitPrice: formData.exitPrice ? parseFloat(formData.exitPrice) : undefined,
         avgBuy: formData.avgBuy ? parseFloat(formData.avgBuy) : undefined,

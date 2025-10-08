@@ -12,7 +12,7 @@ interface Trade {
   id: string;
   tradeId: number;
   ticker: string;
-  status: 'OPEN' | 'CLOSED';
+  status: 'OPEN' | 'CLOSED' | 'WIN' | 'LOSS';
   side: 'LONG' | 'SHORT';
   type: 'SHARE' | 'OPTION';
   size: number;
@@ -124,9 +124,16 @@ export default function TradeDetailPage() {
   };
 
   const getStatusBadge = (status: string) => {
-    return status === 'OPEN' 
-      ? <Badge variant="outline" className="bg-yellow-100 text-yellow-800">Open</Badge>
-      : <Badge variant="outline" className="bg-green-100 text-green-800">Closed</Badge>;
+    if (status === 'OPEN') {
+      return <Badge variant="outline" className="bg-yellow-100 text-yellow-800">Open</Badge>;
+    } else if (status === 'CLOSED') {
+      return <Badge variant="outline" className="bg-gray-100 text-gray-800">Closed</Badge>;
+    } else if (status === 'WIN') {
+      return <Badge variant="outline" className="bg-green-100 text-green-800">Win</Badge>;
+    } else if (status === 'LOSS') {
+      return <Badge variant="outline" className="bg-red-100 text-red-800">Loss</Badge>;
+    }
+    return <Badge variant="outline">Unknown</Badge>;
   };
 
   const getSideIcon = (side: string) => {
