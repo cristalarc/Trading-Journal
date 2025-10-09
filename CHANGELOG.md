@@ -1,3 +1,29 @@
+## [10/09/2025] - Trade Import System Fixes
+
+### Fixed
+- **CSV Import Date Parsing**: Fixed date parsing for Tradersync CSV format (`16-Sep-25`) by implementing custom date parser with month abbreviation mapping
+- **Date Object Handling**: Fixed `createTrade` function to properly handle Date objects instead of converting them to invalid strings
+- **Field Mapping**: Updated CSV import to use correct field names from Tradersync format:
+  - `Quantity` → `Size` field mapping
+  - `Price` → `Entry Price`/`Exit Price` field mapping  
+  - `Date` → `Open Date`/`Close Date` field mapping
+- **Data Validation**: Enhanced import validation to skip invalid CSV rows with missing or zero quantity/price values
+- **Error Handling**: Improved error messages and logging for debugging import issues
+
+### Technical Implementation
+- **Custom Date Parser**: Implemented robust date parsing for `DD-MMM-YY` format with month abbreviation mapping
+- **Type Safety**: Added `instanceof Date` checks to prevent string concatenation with Date objects
+- **Field Mapping**: Updated `TradersyncRow` interface to match actual CSV structure with proper field names
+- **Validation Logic**: Enhanced data validation to handle edge cases and provide meaningful error messages
+
+### Notes
+- CSV import now correctly handles Tradersync export format with proper date parsing
+- Date objects are preserved throughout the import process to prevent timezone issues
+- Import system gracefully handles malformed CSV data with appropriate warnings
+- All financial calculations maintain accuracy with proper Decimal type handling
+
+---
+
 ## [10/08/2025] - Trade Log System Implementation
 
 ### Added

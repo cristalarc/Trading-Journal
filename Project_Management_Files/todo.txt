@@ -1,8 +1,6 @@
 - Implement Trades
 -- Implement the import module of trades. All trades, long or short, come in as Avg Buy.
-
-Fix: 
-Multiple trades not grouping up as same trade.
+--- Need to add tag identification to the import
 
 - Implement API 
 -- Implement Best Exit

@@ -146,7 +146,9 @@ export async function createTrade(data: any) {
         : typeof data.size === 'number' 
           ? new Prisma.Decimal(data.size.toString())
           : data.size,
-      openDate: new Date(data.openDate + 'T00:00:00'), // Force local timezone
+      openDate: data.openDate instanceof Date 
+        ? data.openDate 
+        : new Date(data.openDate + 'T00:00:00'), // Force local timezone if string
       side: data.side,
       type: data.type,
       status: data.status || 'OPEN',
@@ -156,7 +158,9 @@ export async function createTrade(data: any) {
 
     // Handle optional fields
     if (data.closeDate) {
-      formattedData.closeDate = new Date(data.closeDate + 'T00:00:00'); // Force local timezone
+      formattedData.closeDate = data.closeDate instanceof Date 
+        ? data.closeDate 
+        : new Date(data.closeDate + 'T00:00:00'); // Force local timezone if string
       // Status will be determined after calculations
     }
 
