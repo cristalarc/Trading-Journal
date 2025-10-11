@@ -16,6 +16,20 @@ export default function TagsPage() {
   const [editingTag, setEditingTag] = useState<any>(null);
   const [showAddModal, setShowAddModal] = useState(false);
 
+  // Get unique categories from existing tags
+  const existingCategories = Array.from(new Set(tags.map(tag => tag.category).filter(Boolean)));
+
+  // Sort tags by category, then by displayOrder, then by name
+  const sortedTags = [...tags].sort((a, b) => {
+    if (a.category !== b.category) {
+      return a.category.localeCompare(b.category);
+    }
+    if (a.displayOrder !== b.displayOrder) {
+      return a.displayOrder - b.displayOrder;
+    }
+    return a.name.localeCompare(b.name);
+  });
+
   if (isLoading) {
     return (
       <div className="flex justify-center items-center min-h-[200px]">
@@ -26,7 +40,7 @@ export default function TagsPage() {
 
   const handleSelectAll = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.checked) {
-      setSelectedIds(tags.map(tag => tag.id));
+      setSelectedIds(sortedTags.map(tag => tag.id));
     } else {
       setSelectedIds([]);
     }
@@ -165,7 +179,7 @@ export default function TagsPage() {
                 <th className="p-4 text-center">
                   <input
                     type="checkbox"
-                    checked={selectedIds.length === tags.length && tags.length > 0}
+                    checked={selectedIds.length === sortedTags.length && sortedTags.length > 0}
                     onChange={handleSelectAll}
                   />
                 </th>
@@ -179,7 +193,7 @@ export default function TagsPage() {
             </tr>
           </thead>
           <tbody>
-            {tags.map((tag) => (
+            {sortedTags.map((tag) => (
               <tr key={tag.id} className="border-b">
                 {selectMode && (
                   <td className="p-4 text-center">
@@ -257,6 +271,7 @@ export default function TagsPage() {
           tag={editingTag}
           onClose={() => setEditingTag(null)}
           onSave={handleSaveTag}
+          existingCategories={existingCategories}
         />
       )}
 
@@ -266,6 +281,7 @@ export default function TagsPage() {
           onClose={() => setShowAddModal(false)}
           onSave={handleAddTag}
           existingNames={tags.map(t => t.name)}
+          existingCategories={existingCategories}
         />
       )}
     </div>

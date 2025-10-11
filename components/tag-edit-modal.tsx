@@ -17,10 +17,14 @@ interface TagEditModalProps {
   onClose: () => void;
   onSave: (tagId: string | null, data: Partial<Tag>) => Promise<void>;
   existingNames?: string[];
+  existingCategories?: string[];
 }
 
-export function TagEditModal({ tag, onClose, onSave, existingNames = [] }: TagEditModalProps) {
+export function TagEditModal({ tag, onClose, onSave, existingNames = [], existingCategories = [] }: TagEditModalProps) {
   const [isSaving, setIsSaving] = useState(false);
+  const [isCustomCategory, setIsCustomCategory] = useState(
+    tag?.category ? !existingCategories.includes(tag.category) : false
+  );
   const [formData, setFormData] = useState({
     name: tag?.name || '',
     category: tag?.category || '',
@@ -31,7 +35,7 @@ export function TagEditModal({ tag, onClose, onSave, existingNames = [] }: TagEd
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target;
-    
+
     if (type === 'checkbox') {
       const checkbox = e.target as HTMLInputElement;
       setFormData(prev => ({
@@ -48,6 +52,17 @@ export function TagEditModal({ tag, onClose, onSave, existingNames = [] }: TagEd
         ...prev,
         [name]: value
       }));
+    }
+  };
+
+  const handleCategorySelectChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const value = e.target.value;
+    if (value === '__custom__') {
+      setIsCustomCategory(true);
+      setFormData(prev => ({ ...prev, category: '' }));
+    } else {
+      setIsCustomCategory(false);
+      setFormData(prev => ({ ...prev, category: value }));
     }
   };
 
@@ -101,15 +116,48 @@ export function TagEditModal({ tag, onClose, onSave, existingNames = [] }: TagEd
             <label htmlFor="category" className="block text-sm font-medium mb-1">
               Category
             </label>
-            <input
-              type="text"
-              id="category"
-              name="category"
-              value={formData.category}
-              onChange={handleChange}
-              className="w-full px-3 py-2 border rounded-md bg-background"
-              required
-            />
+            {!isCustomCategory ? (
+              <div className="space-y-2">
+                <select
+                  id="category"
+                  value={formData.category}
+                  onChange={handleCategorySelectChange}
+                  className="w-full px-3 py-2 border rounded-md bg-background"
+                  required
+                >
+                  <option value="">Select a category...</option>
+                  {existingCategories.map((cat) => (
+                    <option key={cat} value={cat}>
+                      {cat}
+                    </option>
+                  ))}
+                  <option value="__custom__">+ Create new category</option>
+                </select>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                <input
+                  type="text"
+                  id="category"
+                  name="category"
+                  value={formData.category}
+                  onChange={handleChange}
+                  placeholder="Enter new category name"
+                  className="w-full px-3 py-2 border rounded-md bg-background"
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsCustomCategory(false);
+                    setFormData(prev => ({ ...prev, category: existingCategories[0] || '' }));
+                  }}
+                  className="text-sm text-primary hover:underline"
+                >
+                  ← Back to existing categories
+                </button>
+              </div>
+            )}
           </div>
 
           <div>

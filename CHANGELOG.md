@@ -1,3 +1,29 @@
+## [10/11/2025] - Tags Management UX Improvements
+
+### Changed
+- **Tag Category Selection**: Enhanced tag creation/editing modal with dropdown for existing categories
+  - Displays all existing categories in a dropdown list
+  - Added "+ Create new category" option for new categories
+  - Toggle between dropdown selection and custom text input
+  - Improved user experience with category reuse and consistency
+- **Tags Table Sorting**: Implemented automatic sorting by category, display order, and name
+  - Tags now grouped by category for better organization
+  - Secondary sort by display order within each category
+  - Tertiary sort by name as tiebreaker
+
+### Technical Implementation
+- Updated `TagEditModal` component with conditional rendering for category input
+- Added `existingCategories` prop to modal for dropdown population
+- Implemented category state management with `isCustomCategory` toggle
+- Enhanced tags page with automatic category extraction and sorting logic
+
+### Notes
+- Category dropdown improves consistency across tag management
+- Sorted table view provides better visual organization of tags by category
+- Seamless toggle between existing and custom categories enhances workflow
+
+---
+
 ## [10/09/2025] - Trade Import System Fixes
 
 ### Fixed
