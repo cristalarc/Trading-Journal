@@ -78,6 +78,7 @@ model StrategyConfig {
   taggingSystem             String?       @db.VarChar(500) @map("tagging_system")
   displayOrder              Int
   isActive                  Boolean       @default(true)
+  pendingReview             Boolean       @default(false) @map("pending_review")
   createdAt                 DateTime      @default(now()) @map("created_at")
   updatedAt                 DateTime      @updatedAt @map("updated_at")
   ideas                     Idea[]
@@ -92,9 +93,10 @@ model TagConfig {
   description   String?       @db.VarChar(500)
   displayOrder  Int
   isActive      Boolean       @default(true)
+  pendingReview Boolean       @default(false) @map("pending_review")
   createdAt     DateTime      @default(now()) @map("created_at")
   updatedAt     DateTime      @updatedAt @map("updated_at")
-  
+
   // Trade relations
   tradesSetup1  Trade[]       @relation("TradeSetup1")
   tradesSetup2  Trade[]       @relation("TradeSetup2")

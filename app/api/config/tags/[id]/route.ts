@@ -49,7 +49,7 @@ export async function PATCH(
   try {
     const { id } = params;
     const body = await request.json();
-    const { name, category, description, displayOrder, isActive } = body;
+    const { name, category, description, displayOrder, isActive, pendingReview } = body;
 
     logger.debug(`Updating tag: ${id}`, { name, category });
 
@@ -68,7 +68,7 @@ export async function PATCH(
     // Check if name is being changed and if new name already exists
     if (name && name !== existingTag.name) {
       const nameExists = await prisma.tagConfig.findFirst({
-        where: { 
+        where: {
           name,
           id: { not: id }
         }
@@ -88,6 +88,7 @@ export async function PATCH(
     if (description !== undefined) updateData.description = description;
     if (displayOrder !== undefined) updateData.displayOrder = displayOrder;
     if (isActive !== undefined) updateData.isActive = isActive;
+    if (pendingReview !== undefined) updateData.pendingReview = pendingReview;
 
     const tag = await prisma.tagConfig.update({
       where: { id },

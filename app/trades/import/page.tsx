@@ -6,12 +6,20 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { ArrowLeft, Upload, FileText, AlertCircle, CheckCircle } from 'lucide-react';
 import Link from 'next/link';
+import { UnmatchedTagsDialog } from '@/components/trades/UnmatchedTagsDialog';
+
+interface UnmatchedTag {
+  name: string;
+  suggestedType: 'pattern' | 'strategy' | 'source' | 'tag';
+}
 
 interface ImportResult {
   success: boolean;
   message: string;
   tradesCreated: number;
   errors: string[];
+  warnings?: string[];
+  unmatchedTags?: UnmatchedTag[];
 }
 
 export default function ImportTradesPage() {
@@ -20,6 +28,8 @@ export default function ImportTradesPage() {
   const [importResult, setImportResult] = useState<ImportResult | null>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [importType, setImportType] = useState<'tradersync' | 'thinkorswim'>('tradersync');
+  const [showUnmatchedDialog, setShowUnmatchedDialog] = useState(false);
+  const [unmatchedTags, setUnmatchedTags] = useState<UnmatchedTag[]>([]);
 
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -50,6 +60,12 @@ export default function ImportTradesPage() {
 
       const result = await response.json();
       setImportResult(result);
+
+      // Check if there are unmatched tags
+      if (result.unmatchedTags && result.unmatchedTags.length > 0) {
+        setUnmatchedTags(result.unmatchedTags);
+        setShowUnmatchedDialog(true);
+      }
 
       if (result.success) {
         // Clear the file input
@@ -254,7 +270,18 @@ export default function ImportTradesPage() {
                   Successfully created {importResult.tradesCreated} trade(s).
                 </p>
               )}
-              
+
+              {importResult.warnings && importResult.warnings.length > 0 && (
+                <div className="mt-3">
+                  <p className="font-medium text-yellow-800 mb-2">Warnings:</p>
+                  <ul className="list-disc list-inside text-yellow-700 space-y-1">
+                    {importResult.warnings.map((warning, index) => (
+                      <li key={index} className="text-sm">{warning}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
               {importResult.errors && importResult.errors.length > 0 && (
                 <div className="mt-3">
                   <p className="font-medium text-red-800 mb-2">Errors encountered:</p>
@@ -263,6 +290,28 @@ export default function ImportTradesPage() {
                       <li key={index}>{error}</li>
                     ))}
                   </ul>
+                </div>
+              )}
+
+              {importResult.unmatchedTags && importResult.unmatchedTags.length > 0 && (
+                <div className="mt-3">
+                  <p className="font-medium text-blue-800 mb-2">
+                    {importResult.unmatchedTags.length} unmatched tag(s) found:
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {importResult.unmatchedTags.map((tag, index) => (
+                      <span key={index} className="px-2 py-1 bg-blue-100 text-blue-800 rounded text-sm">
+                        {tag.name}
+                      </span>
+                    ))}
+                  </div>
+                  <Button
+                    variant="outline"
+                    onClick={() => setShowUnmatchedDialog(true)}
+                    className="mt-3"
+                  >
+                    Create Missing Tags
+                  </Button>
                 </div>
               )}
             </div>
@@ -277,6 +326,17 @@ export default function ImportTradesPage() {
           </Card>
         )}
       </div>
+
+      {/* Unmatched Tags Dialog */}
+      <UnmatchedTagsDialog
+        open={showUnmatchedDialog}
+        onOpenChange={setShowUnmatchedDialog}
+        unmatchedTags={unmatchedTags}
+        onComplete={() => {
+          // Clear unmatched tags after creation
+          setUnmatchedTags([]);
+        }}
+      />
     </div>
   );
 }

@@ -1,3 +1,68 @@
+## [10/11/2025] - Enhanced Trade Import with Intelligent Tag Matching + Pending Review System
+
+### Added
+- **Pending Review System for Quick-Created Tags and Strategies**:
+  - Tags and Strategies created via import dialog are automatically marked as "pending review"
+  - Yellow badge indicator appears next to pending review items in management pages
+  - Filter button to show only pending review items (e.g., "Show Pending (3)")
+  - Pending count displayed in page header
+  - Patterns and Sources are NOT marked for review (quick setup is sufficient)
+  - Users can complete full configuration later at their convenience
+
+- **Intelligent Tag Matching System**: Automatically recognizes and matches comma-separated tags from CSV import
+  - Parses "Setups" and "Mistakes" columns from imported CSV files
+  - Matches imported tags against existing Patterns, Strategies, Sources, and Tags
+  - Fuzzy matching algorithm (case-insensitive, substring matching, special character handling)
+  - Smart type suggestions based on keyword analysis
+
+- **Interactive Tag Creation Dialog**: User-friendly interface for handling unmatched tags
+  - Review unmatched tags one by one
+  - Choose appropriate type (Pattern, Strategy, Source, or Tag)
+  - Add descriptions and additional metadata
+  - Progress tracking (created vs. skipped tags)
+  - Skip unwanted tags option
+
+- **API Endpoints for Tag Creation**:
+  - `/api/config/tags/create` - Create new tags
+  - `/api/config/patterns/create` - Create new patterns
+  - `/api/config/strategies/create` - Create new strategies
+  - `/api/config/sources/create` - Create new sources
+
+### Changed
+- **Import Response Enhanced**: Now includes warnings and unmatched tags
+- **CSV Interface Updated**: Added Setups and Mistakes columns to TradersyncRow interface
+- **Automatic Tag Assignment**: Matched tags automatically assigned to setup1-7 and mistake1-5 fields
+- **Source Detection**: Sources detected in Setups column are automatically assigned to trade
+
+### Technical Implementation
+- Created `tagMatchingService.ts` with matching algorithms and type suggestion logic
+- Created `UnmatchedTagsDialog.tsx` component for interactive tag creation
+- Updated import route to integrate tag matching during CSV processing
+- Enhanced import page to display warnings and handle unmatched tags dialog
+- Implemented normalization and similarity checking for flexible matching
+- Added `pendingReview` boolean field to TagConfig and StrategyConfig schemas
+- Created `PendingReviewBadge` component for visual indicator
+- Updated API routes to accept and update `pendingReview` flag
+- Added filter functionality to Tags management page for pending review items
+
+### User Benefits
+- **Time Savings**: Automatic tag matching eliminates manual assignment
+- **Consistency**: Ensures tags are consistently named across imports
+- **Flexibility**: Create new tags on-the-fly during import process
+- **Intelligence**: Smart type detection reduces manual decisions
+- **Visibility**: Clear warnings when tags can't be automatically assigned
+
+### Example Usage
+CSV with: `Setups: "Waited, SWT, RW, OnMacro, MQ, DVOLLN"`
+- System matches existing tags (e.g., "SWT", "RW")
+- Suggests types for unmatched tags (e.g., "OnMacro" → Strategy)
+- Dialog prompts to create missing tags
+- All matched tags automatically assigned to trade
+
+For detailed documentation, see [IMPORT_IMPROVEMENTS.md](./IMPORT_IMPROVEMENTS.md)
+
+---
+
 ## [10/11/2025] - Tags Management UX Improvements
 
 ### Changed

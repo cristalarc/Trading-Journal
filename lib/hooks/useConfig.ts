@@ -53,6 +53,7 @@ export type Strategy = {
   taggingSystem?: string;
   displayOrder: number;
   isActive: boolean;
+  pendingReview: boolean;
 };
 
 export type Tag = {
@@ -62,6 +63,7 @@ export type Tag = {
   description?: string;
   displayOrder: number;
   isActive: boolean;
+  pendingReview: boolean;
 };
 
 export function useTimeframes() {

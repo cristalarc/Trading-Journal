@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createTrade } from '@/lib/services/tradeService';
 import { parse } from 'csv-parse/sync';
+import { parseAndMatchTags, matchedTagsToTradeFields } from '@/lib/services/tagMatchingService';
+import type { UnmatchedTag } from '@/lib/services/tagMatchingService';
 
 interface TradersyncRow {
   Status: string;
@@ -10,6 +12,8 @@ interface TradersyncRow {
   'Close Date': string;
   'Open Time': string;
   'Close Time': string;
+  Setups?: string;
+  Mistakes?: string;
   'Entry Price': string;
   'Exit Price': string;
   'Return $': string;
@@ -89,11 +93,16 @@ export async function POST(request: NextRequest) {
       tradeGroups.get(key)!.push(record);
     }
 
+    // Collect all unmatched tags across all trades
+    const allUnmatchedTags = new Map<string, UnmatchedTag>();
+
     const results = {
       success: true,
       message: 'Trades imported successfully',
       tradesCreated: 0,
-      errors: [] as string[]
+      errors: [] as string[],
+      warnings: [] as string[],
+      unmatchedTags: [] as UnmatchedTag[]
     };
 
     // Process each trade group
@@ -101,6 +110,54 @@ export async function POST(request: NextRequest) {
       try {
         const tradeData = await processTradeGroup(trades);
         if (tradeData) {
+          // Match tags from Setups and Mistakes columns
+          const firstTrade = trades[0];
+          const setupsResult = await parseAndMatchTags(firstTrade.Setups);
+          const mistakesResult = await parseAndMatchTags(firstTrade.Mistakes);
+
+          // Collect unmatched tags
+          setupsResult.unmatched.forEach(tag => {
+            if (!allUnmatchedTags.has(tag.name)) {
+              allUnmatchedTags.set(tag.name, tag);
+            }
+          });
+          mistakesResult.unmatched.forEach(tag => {
+            if (!allUnmatchedTags.has(tag.name)) {
+              allUnmatchedTags.set(tag.name, tag);
+            }
+          });
+
+          // Convert matched tags to trade fields
+          const setupFields = matchedTagsToTradeFields(setupsResult.matched);
+          const mistakeFields = matchedTagsToTradeFields(mistakesResult.matched);
+
+          // Add warnings to results
+          setupFields.warnings.forEach(w => results.warnings.push(`${key}: ${w}`));
+          mistakeFields.warnings.forEach(w => results.warnings.push(`${key}: ${w}`));
+
+          // Assign setup IDs to trade data
+          const setupIds = setupFields.setupIds;
+          const mistakeIds = mistakeFields.mistakeIds;
+
+          if (setupIds.length > 0) tradeData.setup1Id = setupIds[0];
+          if (setupIds.length > 1) tradeData.setup2Id = setupIds[1];
+          if (setupIds.length > 2) tradeData.setup3Id = setupIds[2];
+          if (setupIds.length > 3) tradeData.setup4Id = setupIds[3];
+          if (setupIds.length > 4) tradeData.setup5Id = setupIds[4];
+          if (setupIds.length > 5) tradeData.setup6Id = setupIds[5];
+          if (setupIds.length > 6) tradeData.setup7Id = setupIds[6];
+
+          if (mistakeIds.length > 0) tradeData.mistake1Id = mistakeIds[0];
+          if (mistakeIds.length > 1) tradeData.mistake2Id = mistakeIds[1];
+          if (mistakeIds.length > 2) tradeData.mistake3Id = mistakeIds[2];
+          if (mistakeIds.length > 3) tradeData.mistake4Id = mistakeIds[3];
+          if (mistakeIds.length > 4) tradeData.mistake5Id = mistakeIds[4];
+
+          // Use source if matched
+          if (setupFields.sourceId && !tradeData.sourceId) {
+            tradeData.sourceId = setupFields.sourceId;
+          }
+
           await createTrade({
             ...tradeData,
             importSource: 'tradersync',
@@ -115,9 +172,14 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // Convert unmatched tags map to array
+    results.unmatchedTags = Array.from(allUnmatchedTags.values());
+
     if (results.tradesCreated === 0 && results.errors.length > 0) {
       results.success = false;
       results.message = 'No trades were created due to errors';
+    } else if (results.unmatchedTags.length > 0) {
+      results.message = `${results.tradesCreated} trade(s) imported. ${results.unmatchedTags.length} unmatched tag(s) found.`;
     }
 
     return NextResponse.json(results);

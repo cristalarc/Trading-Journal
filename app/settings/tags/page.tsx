@@ -6,6 +6,7 @@ import { Loader2, Trash2 } from 'lucide-react';
 import Link from "next/link";
 import { ChevronLeft } from "lucide-react";
 import { TagEditModal } from '@/components/tag-edit-modal';
+import { PendingReviewBadge } from '@/components/ui/PendingReviewBadge';
 
 export default function TagsPage() {
   const { tags, isLoading, refreshTags } = useTags();
@@ -15,12 +16,21 @@ export default function TagsPage() {
   const [isDeleting, setIsDeleting] = useState(false);
   const [editingTag, setEditingTag] = useState<any>(null);
   const [showAddModal, setShowAddModal] = useState(false);
+  const [showPendingOnly, setShowPendingOnly] = useState(false);
 
   // Get unique categories from existing tags
   const existingCategories = Array.from(new Set(tags.map(tag => tag.category).filter(Boolean)));
 
+  // Count pending review tags
+  const pendingCount = tags.filter(tag => tag.pendingReview).length;
+
+  // Filter tags based on pending review toggle
+  const filteredTags = showPendingOnly
+    ? tags.filter(tag => tag.pendingReview)
+    : tags;
+
   // Sort tags by category, then by displayOrder, then by name
-  const sortedTags = [...tags].sort((a, b) => {
+  const sortedTags = [...filteredTags].sort((a, b) => {
     if (a.category !== b.category) {
       return a.category.localeCompare(b.category);
     }
@@ -126,7 +136,14 @@ export default function TagsPage() {
       </div>
 
       <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-semibold">Manage Tags</h1>
+        <div>
+          <h1 className="text-2xl font-semibold">Manage Tags</h1>
+          {pendingCount > 0 && (
+            <p className="text-sm text-yellow-600 mt-1">
+              {pendingCount} tag{pendingCount !== 1 ? 's' : ''} pending review
+            </p>
+          )}
+        </div>
         <div className="flex gap-2">
           {selectMode ? (
             <>
@@ -154,6 +171,18 @@ export default function TagsPage() {
             </>
           ) : (
             <>
+              {pendingCount > 0 && (
+                <button
+                  onClick={() => setShowPendingOnly(!showPendingOnly)}
+                  className={`px-4 py-2 rounded-md ${
+                    showPendingOnly
+                      ? 'bg-yellow-100 text-yellow-800 border-2 border-yellow-300'
+                      : 'bg-secondary text-secondary-foreground hover:bg-secondary/90'
+                  }`}
+                >
+                  {showPendingOnly ? 'Show All' : `Show Pending (${pendingCount})`}
+                </button>
+              )}
               <button
                 onClick={() => setSelectMode(true)}
                 className="px-4 py-2 bg-secondary text-secondary-foreground rounded-md hover:bg-secondary/90"
@@ -204,14 +233,19 @@ export default function TagsPage() {
                     />
                   </td>
                 )}
-                <td className="p-4">{tag.name}</td>
+                <td className="p-4">
+                  <div className="flex items-center gap-2">
+                    {tag.name}
+                    <PendingReviewBadge isPending={tag.pendingReview} />
+                  </div>
+                </td>
                 <td className="p-4">{tag.category}</td>
                 <td className="p-4">{tag.description || '-'}</td>
                 <td className="p-4">{tag.displayOrder}</td>
                 <td className="p-4">
                   <span className={`px-2 py-1 rounded-full text-xs ${
-                    tag.isActive 
-                      ? 'bg-green-100 text-green-800' 
+                    tag.isActive
+                      ? 'bg-green-100 text-green-800'
                       : 'bg-red-100 text-red-800'
                   }`}>
                     {tag.isActive ? 'Active' : 'Inactive'}
