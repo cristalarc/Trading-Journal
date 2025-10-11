@@ -16,6 +16,8 @@ Add form validation and submission handling
 Implement authentication for user accounts
 Add more advanced filtering and search capabilities
 
+Add proper logging
+
 Add automatic calculation of Quality depending on the strategy.
 
 

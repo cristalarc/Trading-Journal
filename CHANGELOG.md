@@ -451,4 +451,349 @@
 
 ### Notes
 - Prisma Client must be regenerated after schema changes (`npx prisma generate`).
-- Only retrospectives with `overdue` status require user action and are shown in the Retrospectives page. 
+- Only retrospectives with `overdue` status require user action and are shown in the Retrospectives page.
+
+---
+
+## [05/23/2025] - Help Tooltips Loading Fix
+
+### Fixed
+- **Default Tooltip Text Flash**: Fixed quick visual bug where default tooltip text would briefly display before actual configured text loaded
+- Improved loading state handling for tooltip configuration
+
+### Notes
+- Enhanced user experience by eliminating the brief flash of default tooltip text during page load
+
+---
+
+## [05/21/2025] - Help Tooltips and Configuration Pages Enhancement
+
+### Added
+- **Help Tooltips Page Enhancements**:
+  - Made tooltip text editable with fallback to hard-coded default values when no custom text is provided
+  - Enhanced user control over tooltip content management
+- **Manage Patterns Page**:
+  - Added functionality for Add Pattern button
+  - Implemented duplicate name checker to prevent pattern conflicts
+  - Fully operative Delete Pattern workflow
+- **Manage Timeframes Page**:
+  - Added functionality for Add Timeframe button
+  - Implemented duplicate name checker to prevent timeframe conflicts
+  - Fully operative Delete Timeframe workflow
+
+### Fixed
+- **Help Tooltips**: Fixed functionality of the Save Changes button
+- **Manage Patterns**: Fixed Delete Pattern workflow, now fully operative
+- **Manage Timeframes**: Fixed Delete Timeframe workflow, now fully operative
+
+### Notes
+- Configuration pages now have complete CRUD functionality
+- Duplicate checking prevents data integrity issues
+- All configuration management features are fully functional
+
+---
+
+## [05/18/2025] - Settings UI and Journal Backend Improvements
+
+### Changed
+- **Settings UI Enhancements**:
+  - Fixed UI for Manage Patterns view with improved layout and styling
+  - Fixed UI for Manage Timeframes view with improved layout and styling
+  - Enhanced overall settings page consistency
+
+### Added
+- **Journal Time Table Panel Enhancements**:
+  - Added Monthly column to Time Table (now displays Monthly, Weekly, Daily, Hourly)
+  - Expanded Time Table panel to occupy 75% of screen for better visibility
+  - Improved card stacking and expand/collapse functionality for all timeframe columns
+- **Journal Entry Validation & Editing**:
+  - Made ticker, timeframe, price, and comments mandatory for all journal entries (server-side validation)
+  - Added entry deletion functionality
+- **Filter & Search Improvements**:
+  - Added Ticker filter input to filter panel for quick searching by ticker
+  - Resetting filters now also clears the ticker filter
+
+### Fixed
+- **Backend Update Logic**:
+  - Fixed backend update logic to properly handle decimals and relations (timeframe, pattern) when editing entries
+  - Prevented DecimalError by only converting valid numeric values to Prisma.Decimal
+  - Editing now reliably updates all fields, including clearing support/resistance
+- **Time Table Improvements**:
+  - Removed the Unknown column from Time Table (was used for debugging missing timeframes)
+  - Improved error handling and user experience throughout the Journal UI
+
+### Notes
+- Entry validation ensures data quality with mandatory fields
+- Time Table provides comprehensive multi-timeframe analysis view
+- Enhanced filtering capabilities improve journal navigation
+
+---
+
+## [03/21/2025] - Journal UI and Backend Validation
+
+### Added
+- **Journal Time Table Panel Enhancements**:
+  - Added Monthly column to Time Table (now shows Monthly, Weekly, Daily, Hourly)
+  - Expanded Time Table panel to occupy 75% of the screen for better visibility
+  - Improved card stacking and expand/collapse for all timeframe columns
+- **Entry Validation & Editing**:
+  - Made ticker, timeframe, price, and comments mandatory for all journal entries (server-side validation)
+  - Added entry deletion functionality
+- **Filter & Search Improvements**:
+  - Added a Ticker filter input to the filter panel for quick searching by ticker
+  - Resetting filters now also clears the ticker filter
+
+### Fixed
+- **Backend Update Logic**:
+  - Fixed backend update logic to properly handle decimals and relations (timeframe, pattern) when editing entries
+  - Prevented DecimalError by only converting valid numeric values to Prisma.Decimal
+  - Editing now reliably updates all fields, including clearing support/resistance
+- **General Bug Fixes**:
+  - Removed the Unknown column from Time Table (was used for debugging missing timeframes)
+  - Improved error handling and user experience throughout the Journal UI
+
+### Notes
+- Server-side validation ensures data integrity
+- Enhanced Time Table provides better multi-timeframe analysis
+- Improved filtering and search capabilities
+
+---
+
+## [03/20/2025] - Card-Based Edit Form and Settings Pages
+
+### Added
+- **Card-Based Edit Form Implementation**:
+  - Created new JournalEditForm component with modal overlay and backdrop blur
+  - Added proper form field styling and validation
+  - Added ESC key functionality for closing modal
+  - Implemented loading state during save operations
+  - Enhanced error handling and feedback
+  - Fixed black background issues on input fields
+  - Improved modal positioning and visibility
+
+- **Settings Pages Implementation**:
+  - **Timeframes Management Page** (`/settings/timeframes`):
+    - Table view of existing timeframes
+    - Display order tracking
+    - Active/Inactive status indicators
+    - Basic Add/Edit UI placeholders
+  - **Patterns Management Page** (`/settings/patterns`):
+    - Table view of existing patterns
+    - Description field display
+    - Display order tracking
+    - Active/Inactive status indicators
+    - Basic Add/Edit UI placeholders
+
+- **Tooltip System Enhancement**:
+  - Created reusable Tooltip component with help icon (?) for explanations and settings icon (⚙️) for configuration
+  - Hover-based display with proper positioning and styling
+  - Settings page navigation integration
+  - Enhanced `/settings/tooltips` page with 7D Retro and 30D Retro tooltip configuration
+  - Implemented reusable input components with character limit enforcement (50 chars)
+  - Added real-time character count display
+
+- **Journal Table Integration**:
+  - Added tooltips to table headers: Timeframe (settings), Pattern (settings), Direction (help), Sentiment (help), 7D Retro (help), 30D Retro (help)
+
+### Technical Implementation
+- Added TypeScript typing for new components
+- Implemented reusable component patterns
+- Enhanced error handling and state management
+- Added keyboard navigation support
+- Implemented consistent styling using Tailwind
+
+### Notes
+- Modal edit form provides better user experience than inline editing
+- Tooltip system enhances user guidance throughout the application
+- Settings pages provide centralized configuration management
+
+---
+
+## [03/19/2025] - Database Schema and Decimal Handling Fixes
+
+### Fixed
+- **Prisma Schema Relation Issues**: Resolved issues with relation modeling in Prisma by properly implementing connect format for timeframe and pattern relations
+- **Non-Existent Schema Field**: Removed the `relevantWeek` property from database operations as it wasn't defined in the schema
+- **Date Handling**: Corrected timezone issues when saving journal entries by using T12:00:00Z timestamp format to prevent dates from shifting backward by one day
+- **Journal View Crash**: Resolved `TypeError: entry.price.toFixed is not a function` error by properly handling Prisma.Decimal objects
+- **React Fragment Key Issues**: Fixed key issues in dynamically rendered lists
+
+### Added
+- **Utility Functions**: Created reusable helpers in `lib/utils.ts`:
+  - `formatDecimal()`: Properly formats any decimal value (Prisma.Decimal, number, string)
+  - `formatPrice()`: Adds currency symbol to formatted decimal values
+- **Enhanced Error Handling**: Added more detailed error diagnostics in API responses for common Prisma errors including schema validation failures and foreign key constraint issues
+- **Expanded Row Functionality**: Implemented dropdown details view for journal entries showing support/resistance levels, sentiment, Weekly One Pager eligibility, and comments
+- **Inline Editing**: Created edit form within expanded rows allowing users to modify ticker, price, support/resistance levels, and comments
+
+### Changed
+- **Better User Experience**: Added visual feedback when rows are expanded
+- **Code Quality**: Added comprehensive type handling to avoid runtime errors
+- **Documentation**: Improved code comments throughout the application
+- **Error Prevention**: Added validation to prevent common input errors when creating new entries
+
+### Technical Implementation
+- Properly handled Prisma's Decimal type conversions throughout the app
+- Added robust fallback patterns for parsing and displaying numeric values
+- Enhanced validation to prevent foreign key constraint violations
+
+### Notes
+- Decimal handling now properly manages Prisma.Decimal objects
+- Date handling prevents timezone-related bugs
+- Expanded rows provide better entry detail visibility
+
+---
+
+## [03/13/2025] - Project Structure Reorganization
+
+### Changed
+- **Project Directory**: Changed main directory of project to avoid path and configuration problems
+- **Ignore Files**: Modified ignore files to help Cursor IDE better interact with the project
+
+### Notes
+- Project structure improvements for better development workflow
+- Enhanced IDE integration and file management
+
+---
+
+## [03/10/2025] - Database Structure and Prisma Implementation
+
+### Added
+- **Database Configuration**:
+  - Implemented PostgreSQL database setup with Prisma ORM
+  - Created database schema with proper relationships and constraints
+  - Added automated timestamp handling for `createdAt` and `updatedAt`
+  - Implemented week calculation logic for entry relevance
+
+- **Database Models**:
+  - **TimeframeConfig**: ID, name, display order, active status tracking, relationship with journal entries
+  - **PatternConfig**: ID, name, description, display order, active status tracking, relationship with journal entries
+  - **TooltipConfig**: ID, key, text content, maximum length constraints, update tracking
+  - **JournalEntry**: Core trade information (ticker, price, etc.), support and resistance levels, retrospective tracking (7D and 30D), Weekly One Pager eligibility flag
+
+- **Configuration Files**:
+  - Prisma configuration with schema definition, migration settings, seed script configuration
+  - TypeScript configurations with `tsconfig.seed.json` for database seeding
+  - Environment setup with `.env` for database connection
+
+- **Utility Functions**:
+  - Week calculation logic for entry relevance
+  - Database connection management
+  - Logging utility implementation
+
+### Technical Implementation
+- Full Prisma ORM integration with PostgreSQL
+- Comprehensive database schema design
+- Proper relationship modeling and constraints
+- Seeding infrastructure for initial data
+
+### Notes
+- Foundation for all database operations
+- Proper schema design ensures data integrity
+- Seeding scripts facilitate development and testing
+
+---
+
+## [03/03/2025] - Enhanced Journal Table and Settings Infrastructure
+
+### Added
+- **Enhanced Journal Table Editing**:
+  - Converted pattern field to dropdown using predefined values
+  - Added gear icons for quick access to settings
+  - Limited editing to one entry at a time
+  - Added tooltips for Direction and Sentiment fields
+  - Automatically expands rows when editing
+
+- **Settings Infrastructure**:
+  - Created main settings page with three sections: Trading Patterns management, Timeframes configuration, Help Tooltips customization
+  - Implemented tooltips settings page with character limit enforcement
+  - Added navigation between settings pages
+
+- **Logging System**:
+  - Implemented centralized logging utility (`/lib/logger.ts`) with multiple levels
+  - Added colored console output for development
+  - Structured JSON output for production
+  - Added contextual information to all logs
+  - Added logging for component initialization, user interactions, navigation events, state changes, and error conditions
+
+### Changed
+- **Code Documentation**:
+  - Added comprehensive docstrings to all components
+  - Documented all functions and their purposes
+  - Added inline comments for complex logic
+  - Improved code organization with section comments
+
+- **UI/UX Improvements**:
+  - Added visual feedback for editing state
+  - Improved tooltip positioning and styling
+  - Enhanced settings navigation with breadcrumbs
+  - Added character count display for tooltip editing
+
+### Fixed
+- **Black Background**: Fixed black background on input fields by adding proper background classes
+- **Component Imports**: Corrected component import statements
+- **Variable Naming**: Fixed variable naming inconsistencies
+- **Responsive Layout**: Improved responsive layout issues
+
+### Technical Implementation
+- Centralized logging system for better debugging
+- Enhanced state management for editing mode
+- Improved component organization and documentation
+
+### Notes
+- Settings infrastructure provides foundation for configuration management
+- Logging system aids in debugging and monitoring
+- Enhanced documentation improves code maintainability
+
+---
+
+## [02/27/2025] - Enhanced Journal Page UI and Inline Editing
+
+### Added
+- **Expandable Rows**: Added expandable rows in journal table to display additional information including support/resistance levels, full comments section, and retrospective status for 7-day and 30-day periods
+- **Inline Editing Capability**: Added ability to edit journal entries directly from the main table with number inputs for support/resistance values, textarea for comments, and dropdown selectors for retrospective statuses
+- **New Entry Form Improvements**: Added date field with calendar icon to the New Journal Entry form
+- **Component Integration**:
+  - Created and integrated `TimeTablePanel` component for detailed ticker analysis
+  - Implemented `RetrospectiveReminder` component for overdue retrospectives
+
+### Changed
+- **UI/UX Improvements**:
+  - Ensured consistent styling across all form elements
+  - Enhanced filter section with better organization and visual feedback
+  - Improved responsive design for better mobile experience
+  - Added side panel for detailed views with proper close button
+  - Implemented consistent styling across the application
+  - Added visual indicators for expanded and edited rows
+
+### Fixed
+- **Black Background**: Fixed black background on input fields by adding `bg-background` class
+- **Component Imports**: Fixed component imports to use named exports
+- **Variable Naming**: Fixed variable naming inconsistencies for timeframe filters
+- **Background Colors**: Ensured proper background colors on all form elements
+- **Responsive Layout**: Improved responsive layout for mobile devices
+
+### Technical Implementation
+- Implemented proper state management for expanded rows and editing mode
+- Added conditional rendering for UI elements based on state
+- Ensured consistent styling with Tailwind classes
+- Fixed type issues with component imports
+
+### Notes
+- Expandable rows provide better space utilization and detail visibility
+- Inline editing improves workflow efficiency
+- Component integration enhances overall application functionality
+
+---
+
+## [02/26/2025] - Initial MVP Foundation
+
+### Added
+- **Foundational Files**: Composer created the foundational files for the MVP app
+- **Initial Application Setup**: Basic application structure and configuration
+- **Development Environment**: Configured development server and dependencies
+
+### Notes
+- Ran app with `npm run dev` and confirmed basic functionality
+- Initial version missing key functionality and UI elements
+- Foundation for future feature development 
