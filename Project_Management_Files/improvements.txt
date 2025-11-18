@@ -1,0 +1,12 @@
+
+
+
+--- WOP ---
++ Add AI game plan field to the entries upon request via a button.
+
+
+--- Journal ---
++ Automatic reminder to clear WOP when accesing Journal during weekends.
+
+---- Time Table UI ---- 
++ Make it a chart, and then you can see the comments along the chart and click em too, not just a table.

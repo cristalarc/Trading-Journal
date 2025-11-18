@@ -1,3 +1,0 @@
-Time Table UI: Make it a chart, and then you can see the comments along the chart and click em too, not just a table.
-
-- Remove Ideas expiration component. This is not practical.

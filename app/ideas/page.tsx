@@ -3,21 +3,21 @@
 import Link from "next/link";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { 
-  RefreshCcw, 
-  ChevronDown, 
-  Edit, 
-  Eye, 
-  ChevronUp, 
-  Filter, 
-  Plus, 
+import {
+  RefreshCcw,
+  ChevronDown,
+  Edit,
+  Eye,
+  ChevronUp,
+  Filter,
+  Plus,
   Settings,
   Loader2,
   Trash2,
   TrendingUp,
-  TrendingDown,
   DollarSign,
   Target,
+  XCircle,
 } from "lucide-react";
 import { createLogger } from "@/lib/logger";
 import { format } from "date-fns";
@@ -47,7 +47,7 @@ interface Idea {
   notes?: string;
   sourced?: { name: string };
   quality: 'HQ' | 'MQ' | 'LQ';
-  status: 'active' | 'inactive' | 'expired';
+  status: 'active' | 'expired';
   tradeId?: string;
   expiresAt: string;
   createdAt: string;
@@ -58,7 +58,6 @@ interface IdeasStats {
   total: number;
   active: number;
   expired: number;
-  inactive: number;
   qualityBreakdown: Array<{ quality: string; _count: { quality: number } }>;
   directionBreakdown: Array<{ tradeDirection: string; _count: { tradeDirection: number } }>;
 }
@@ -106,8 +105,12 @@ export default function IdeasPage() {
   const fetchIdeas = async () => {
     try {
       setIsLoading(true);
+
+      // First, mark expired ideas
+      await fetch('/api/ideas?markExpired=true');
+
       const queryParams = new URLSearchParams();
-      
+
       Object.entries(filters).forEach(([key, value]) => {
         if (value) {
           queryParams.append(key, value);
@@ -189,6 +192,26 @@ export default function IdeasPage() {
     setSelectedIdeaForEdit(ideaId);
   };
 
+  const handleQuickExpire = async (ideaId: string) => {
+    logger.debug('Quick expiring idea', { ideaId });
+    try {
+      const response = await fetch(`/api/ideas/${ideaId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: 'expired' })
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to expire idea');
+      }
+
+      await fetchIdeas();
+      await fetchStats();
+    } catch (error) {
+      console.error('Error expiring idea:', error);
+    }
+  };
+
   const handleSelectAll = () => {
     if (selectedIds.length === ideas.length) {
       setSelectedIds([]);
@@ -225,7 +248,6 @@ export default function IdeasPage() {
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'active': return 'bg-green-100 text-green-800';
-      case 'inactive': return 'bg-gray-100 text-gray-800';
       case 'expired': return 'bg-red-100 text-red-800';
       default: return 'bg-gray-100 text-gray-800';
     }
@@ -246,7 +268,7 @@ export default function IdeasPage() {
       
       {/* Statistics Cards */}
       {stats && (
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
           <div className="bg-card p-4 rounded-lg shadow-sm border">
             <div className="flex items-center justify-between">
               <div>
@@ -272,15 +294,6 @@ export default function IdeasPage() {
                 <p className="text-2xl font-bold text-red-600">{stats.expired}</p>
               </div>
               <Target className="h-8 w-8 text-red-600" />
-            </div>
-          </div>
-          <div className="bg-card p-4 rounded-lg shadow-sm border">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">Inactive</p>
-                <p className="text-2xl font-bold text-gray-600">{stats.inactive}</p>
-              </div>
-              <TrendingDown className="h-8 w-8 text-gray-600" />
             </div>
           </div>
         </div>
@@ -381,7 +394,6 @@ export default function IdeasPage() {
               >
                 <option value="">All Status</option>
                 <option value="active">Active</option>
-                <option value="inactive">Inactive</option>
                 <option value="expired">Expired</option>
               </select>
             </div>
@@ -511,7 +523,7 @@ export default function IdeasPage() {
                   <td className="px-4 py-3">{formatPrice(idea.moneyRisk)}</td>
                   <td className="px-4 py-3 text-center">
                     <div className="flex justify-center space-x-2">
-                      <button 
+                      <button
                         onClick={() => toggleRowExpansion(idea.id)}
                         className="text-muted-foreground hover:text-foreground"
                         aria-label={expandedRows.includes(idea.id) ? "Collapse row" : "Expand row"}
@@ -529,6 +541,16 @@ export default function IdeasPage() {
                       >
                         <Edit size={16} />
                       </button>
+                      {idea.status === 'active' && (
+                        <button
+                          onClick={() => handleQuickExpire(idea.id)}
+                          className="text-red-500 hover:text-red-700"
+                          aria-label="Mark as expired"
+                          title="Mark as expired"
+                        >
+                          <XCircle size={16} />
+                        </button>
+                      )}
                     </div>
                   </td>
                 </tr>,

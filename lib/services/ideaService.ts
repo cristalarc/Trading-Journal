@@ -21,7 +21,7 @@ export interface CreateIdeaData {
   notes?: string;
   sourceId?: string;
   quality: 'HQ' | 'MQ' | 'LQ';
-  status?: 'active' | 'inactive';
+  status?: 'active';
   tradeId?: string;
 }
 
@@ -31,7 +31,7 @@ export interface UpdateIdeaData extends Partial<CreateIdeaData> {
 
 export interface IdeaFilters {
   ticker?: string;
-  status?: 'active' | 'inactive' | 'expired';
+  status?: 'active' | 'expired';
   strategyId?: string;
   sourceId?: string;
   quality?: 'HQ' | 'MQ' | 'LQ';
@@ -286,7 +286,6 @@ export async function getIdeasStats() {
     const totalIdeas = await (prisma as any).idea.count();
     const activeIdeas = await (prisma as any).idea.count({ where: { status: 'active' } });
     const expiredIdeas = await (prisma as any).idea.count({ where: { status: 'expired' } });
-    const inactiveIdeas = await (prisma as any).idea.count({ where: { status: 'inactive' } });
 
     const qualityStats = await (prisma as any).idea.groupBy({
       by: ['quality'],
@@ -303,7 +302,6 @@ export async function getIdeasStats() {
       total: totalIdeas,
       active: activeIdeas,
       expired: expiredIdeas,
-      inactive: inactiveIdeas,
       qualityBreakdown: qualityStats,
       directionBreakdown: directionStats
     };

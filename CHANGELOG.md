@@ -1,3 +1,80 @@
+## [11/18/2025] - Ideas Component: Status Simplification & Quick Expire Feature
+
+### Added
+- **Quick Expire Button**: Added instant "Mark as Expired" action button for active ideas
+  - Red XCircle icon appears in the Actions column for all active ideas
+  - One-click expiration without opening edit modal
+  - Automatically refreshes ideas list and statistics after expiration
+  - Button only visible for active ideas (not shown for already expired ideas)
+  - Hover tooltip displays "Mark as expired" for clarity
+
+### Changed
+- **Simplified Status System**: Removed redundant "inactive" status from Ideas component
+  - Reduced status options from 3 to 2: `active` and `expired`
+  - Updated all frontend components to only support active/expired states
+  - Modified database schema to remove `inactive` from `IdeaStatus` enum
+  - Migrated any existing inactive ideas to expired status
+
+- **Automatic Expiration**: Enhanced automatic expiration functionality
+  - Ideas page now calls `markExpiredIdeas()` automatically on every page load
+  - Ensures all ideas past their `expiresAt` date are marked as expired
+  - Statistics dashboard reflects real-time expiration status
+  - Manual expiration (via quick expire button) persists and won't be overridden
+
+- **Statistics Dashboard**: Updated to reflect simplified status system
+  - Changed from 4 stat cards to 3: Total Ideas, Active, Expired (removed Inactive)
+  - Grid layout updated to 3-column display (from 4-column)
+  - Removed inactive count from statistics API response
+
+- **Filter Options**: Streamlined status filtering
+  - Status filter dropdown now shows only "Active" and "Expired" options
+  - Removed "Inactive" from all filter menus and API endpoints
+
+### Fixed
+- **Expiration Logic**: Fixed automatic expiration not triggering
+  - Previously, `markExpiredIdeas()` function existed but was never called
+  - Now automatically invoked on page load before fetching ideas
+  - Only marks ideas with `status = 'active'` AND `expiresAt < now()`
+  - Prevents re-activation of manually expired ideas
+
+- **Status Overlap**: Eliminated confusion between "inactive" and "expired" statuses
+  - Single clear workflow: ideas are either active or expired
+  - Expired status now exclusively handles all non-active ideas
+  - Removed redundant status management logic
+
+### Technical Implementation
+- **Database Migration**: Created migration `20251118162448_remove_inactive_status_from_ideas`
+  - Converted all existing inactive ideas to expired status
+  - Modified PostgreSQL enum type to remove inactive option
+  - Properly handled default value constraints during migration
+
+- **Frontend Updates**:
+  - Updated `app/ideas/page.tsx` with quick expire handler and automatic expiration
+  - Modified `components/ideas-edit-form.tsx` to remove inactive option
+  - Updated TypeScript interfaces across all Ideas components
+  - Added XCircle icon import from lucide-react
+
+- **Backend Updates**:
+  - Updated `lib/services/ideaService.ts` interfaces and statistics function
+  - Modified `app/api/ideas/route.ts` type casting for status filters
+  - Updated `prisma/schema.prisma` IdeaStatus enum definition
+
+### User Benefits
+- **Simplified Workflow**: Clear binary status (active vs expired) eliminates confusion
+- **Quick Actions**: One-click expiration saves time compared to opening edit modal
+- **Automatic Management**: Ideas automatically expire when past due date
+- **Persistent Manual Control**: Manually expired ideas stay expired
+- **Visual Clarity**: Clean UI with only relevant status options
+
+### Notes
+- All existing inactive ideas were automatically converted to expired during migration
+- Quick expire button bypasses automatic checks to ensure manual expiration persists
+- Automatic expiration only affects ideas with `status = 'active'`
+- Statistics and filtering now reflect simplified two-status system
+- Database migration applied successfully with proper enum handling
+
+---
+
 ## [10/11/2025] - Enhanced Trade Import with Intelligent Tag Matching + Pending Review System
 
 ### Added

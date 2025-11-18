@@ -29,7 +29,7 @@ interface Idea {
   notes?: string;
   sourced?: { name: string };
   quality: 'HQ' | 'MQ' | 'LQ';
-  status: 'active' | 'inactive' | 'expired';
+  status: 'active' | 'expired';
   tradeId?: string;
   expiresAt: string;
   createdAt: string;
@@ -61,7 +61,7 @@ export function IdeasEditForm({ idea, onClose, onSave }: IdeasEditFormProps) {
     moneyRisk: '',
     notes: '',
     quality: 'HQ' as 'HQ' | 'MQ' | 'LQ',
-    status: 'active' as 'active' | 'inactive' | 'expired',
+    status: 'active' as 'active' | 'expired',
     tradeId: '',
     expiresAt: ''
   });
@@ -219,7 +219,6 @@ export function IdeasEditForm({ idea, onClose, onSave }: IdeasEditFormProps) {
                     className="w-full px-3 py-2 border rounded-md bg-background"
                   >
                     <option value="active">Active</option>
-                    <option value="inactive">Inactive</option>
                     <option value="expired">Expired</option>
                   </select>
                 </div>

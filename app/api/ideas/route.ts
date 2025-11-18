@@ -15,7 +15,7 @@ export async function GET(request: Request) {
     // Extract filter parameters
     const filters: IdeaFilters = {
       ticker: searchParams.get('ticker') || undefined,
-      status: searchParams.get('status') as 'active' | 'inactive' | 'expired' | undefined,
+      status: searchParams.get('status') as 'active' | 'expired' | undefined,
       strategyId: searchParams.get('strategyId') || undefined,
       sourceId: searchParams.get('sourceId') || undefined,
       quality: searchParams.get('quality') as 'HQ' | 'MQ' | 'LQ' | undefined,

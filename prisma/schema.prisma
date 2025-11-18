@@ -261,7 +261,6 @@ enum Quality {
 
 enum IdeaStatus {
   active
-  inactive
   expired
 }
 

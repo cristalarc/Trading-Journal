@@ -6,12 +6,23 @@
 
 - Implement API 
 -- Implement Best Exit
+-- Implement API for Journal to fetch price based on inputted Stock
+
+- Implement Notifications 
+-- Tell the user that an Idea trigger has been hit for Active ideas.
+
+- Implement Scratchpad
+-- Mobile note taking that user can use to quickly capture an opportunity.
+-- Notifications should remind user to process these entries.
+
 - Complete the Retrospective functionality and retrospectives view.
 - Marge Retrospective with API capabilities
 - Implement Reminders with SMS or other high visibility
 - Implement Positions and Thesis (modules where I can have my positions and build investment thesis for them)
-- Implement Thinkorswim import.
 
+
+- Implement Thinkorswim import.
+- Implement Investment Thesis
 
 
 Add form validation and submission handling
@@ -21,7 +32,7 @@ Add more advanced filtering and search capabilities
 Let's make some adjustments to the Setup Tags system when ingesting trades.
 Currently, it's made in a way that only "Setup" category trades 
 
-
+- Remove Ideas expiration component. This is not practical.
 Add proper logging
 
 Add automatic calculation of Quality depending on the strategy.
