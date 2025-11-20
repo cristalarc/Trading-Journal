@@ -3,6 +3,7 @@ import { createTrade } from '@/lib/services/tradeService';
 import { parse } from 'csv-parse/sync';
 import { parseAndMatchTags, matchedTagsToTradeFields } from '@/lib/services/tagMatchingService';
 import type { UnmatchedTag } from '@/lib/services/tagMatchingService';
+import { PortfolioService } from '@/lib/services/portfolioService';
 
 interface TradersyncRow {
   Status: string;
@@ -52,10 +53,18 @@ export async function POST(request: NextRequest) {
     const formData = await request.formData();
     const file = formData.get('file') as File;
     const importType = formData.get('importType') as string;
+    const portfolioId = formData.get('portfolioId') as string;
 
     if (!file) {
       return NextResponse.json(
         { error: 'No file provided' },
+        { status: 400 }
+      );
+    }
+
+    if (!portfolioId) {
+      return NextResponse.json(
+        { error: 'Portfolio selection is required' },
         { status: 400 }
       );
     }
@@ -92,6 +101,8 @@ export async function POST(request: NextRequest) {
       }
       tradeGroups.get(key)!.push(record);
     }
+
+    // Use the provided portfolioId
 
     // Collect all unmatched tags across all trades
     const allUnmatchedTags = new Map<string, UnmatchedTag>();
@@ -160,6 +171,7 @@ export async function POST(request: NextRequest) {
 
           await createTrade({
             ...tradeData,
+            portfolioId,
             importSource: 'tradersync',
             importData: trades
           });

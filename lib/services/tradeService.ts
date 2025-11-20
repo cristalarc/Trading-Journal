@@ -57,6 +57,7 @@ export async function getAllTrades(options?: {
   return prisma.trade.findMany({
     where,
     include: {
+      portfolio: true,
       source: true,
       setup1: true,
       setup2: true,
@@ -89,6 +90,7 @@ export async function getTradeById(id: string) {
   return prisma.trade.findUnique({
     where: { id },
     include: {
+      portfolio: true,
       source: true,
       setup1: true,
       setup2: true,
@@ -141,20 +143,33 @@ export async function createTrade(data: any) {
     const formattedData: any = {
       tradeId,
       ticker: data.ticker,
-      size: typeof data.size === 'string' 
-        ? new Prisma.Decimal(data.size) 
-        : typeof data.size === 'number' 
+      size: typeof data.size === 'string'
+        ? new Prisma.Decimal(data.size)
+        : typeof data.size === 'number'
           ? new Prisma.Decimal(data.size.toString())
           : data.size,
-      openDate: data.openDate instanceof Date 
-        ? data.openDate 
+      openDate: data.openDate instanceof Date
+        ? data.openDate
         : new Date(data.openDate + 'T00:00:00'), // Force local timezone if string
       side: data.side,
       type: data.type,
       status: data.status || 'OPEN',
       importSource: data.importSource || 'manual',
-      importData: data.importData
+      importData: data.importData,
+      portfolio: {
+        connect: { id: data.portfolioId }
+      }
     };
+
+    // Handle position tracking fields
+    if (data.originalOpenDate) {
+      formattedData.originalOpenDate = data.originalOpenDate instanceof Date
+        ? data.originalOpenDate
+        : new Date(data.originalOpenDate);
+    }
+    if (data.executionCount !== undefined) {
+      formattedData.executionCount = data.executionCount;
+    }
 
     // Handle optional fields
     if (data.closeDate) {
@@ -567,7 +582,7 @@ export async function getTradeStats() {
   });
 
   const totalNetReturn = await prisma.trade.aggregate({
-    where: { 
+    where: {
       status: TradeStatus.CLOSED,
       netReturn: { not: null }
     },
@@ -581,5 +596,397 @@ export async function getTradeStats() {
     openTrades,
     closedTrades,
     totalNetReturn: totalNetReturn._sum.netReturn || 0
+  };
+}
+
+/**
+ * PHASE 2: EXECUTION MERGER LOGIC WITH VALIDATION
+ */
+
+/**
+ * Validate that an execution won't result in a negative position
+ * @throws Error if execution would create negative position
+ */
+export function validateExecution(
+  currentPosition: number,
+  executionQuantity: number,
+  executionType: 'BUY' | 'SELL' | 'ADD_TO_POSITION' | 'REDUCE_POSITION',
+  tradeSide: TradeSide
+): { isValid: boolean; error?: string; newPosition?: number } {
+  let newPosition = currentPosition;
+
+  // Calculate new position based on execution type
+  switch (executionType) {
+    case 'BUY':
+    case 'ADD_TO_POSITION':
+      newPosition += executionQuantity;
+      break;
+    case 'SELL':
+    case 'REDUCE_POSITION':
+      newPosition -= executionQuantity;
+      break;
+  }
+
+  // Check for negative position
+  if (newPosition < 0) {
+    return {
+      isValid: false,
+      error: `Cannot execute ${executionType} for ${executionQuantity} shares. Current position is ${currentPosition} shares. This would result in a negative position of ${newPosition} shares.`,
+      newPosition
+    };
+  }
+
+  return {
+    isValid: true,
+    newPosition
+  };
+}
+
+/**
+ * Calculate partial profit for a partial close/trim execution
+ */
+export function calculatePartialProfit(params: {
+  side: TradeSide;
+  avgEntryPrice: number;
+  sellPrice: number;
+  sellQuantity: number;
+}): {
+  partialProfit: number;
+  partialProfitPercent: number;
+} {
+  const { side, avgEntryPrice, sellPrice, sellQuantity } = params;
+
+  let partialProfit = 0;
+
+  if (side === 'LONG') {
+    partialProfit = (sellPrice - avgEntryPrice) * sellQuantity;
+  } else {
+    // SHORT
+    partialProfit = (avgEntryPrice - sellPrice) * sellQuantity;
+  }
+
+  const partialProfitPercent = (partialProfit / (avgEntryPrice * sellQuantity)) * 100;
+
+  return {
+    partialProfit,
+    partialProfitPercent
+  };
+}
+
+/**
+ * Add execution to existing trade with validation
+ * This handles adding, trimming, or closing positions
+ */
+export async function addExecutionToTrade(
+  tradeId: string,
+  execution: {
+    orderType: SubOrderType;
+    quantity: number;
+    price: number;
+    orderDate: Date;
+    notes?: string;
+  }
+) {
+  // Get current trade with sub-orders
+  const trade = await prisma.trade.findUnique({
+    where: { id: tradeId },
+    include: {
+      subOrders: {
+        orderBy: {
+          orderDate: 'asc'
+        }
+      }
+    }
+  });
+
+  if (!trade) {
+    throw new Error('Trade not found');
+  }
+
+  if (trade.status !== 'OPEN') {
+    throw new Error(`Cannot add execution to a ${trade.status} trade. Only OPEN trades can receive new executions.`);
+  }
+
+  // Calculate current position from sub-orders or initial size
+  let currentPosition = trade.size.toNumber();
+  let totalBuyCost = currentPosition * (trade.avgBuy?.toNumber() || trade.entryPrice?.toNumber() || 0);
+  let totalBuyQuantity = currentPosition;
+  let totalSellRevenue = 0;
+  let totalSellQuantity = 0;
+
+  if (trade.subOrders && trade.subOrders.length > 0) {
+    // Recalculate from sub-orders
+    currentPosition = 0;
+    totalBuyCost = 0;
+    totalBuyQuantity = 0;
+    totalSellRevenue = 0;
+    totalSellQuantity = 0;
+
+    for (const order of trade.subOrders) {
+      const qty = order.quantity.toNumber();
+      const price = order.price.toNumber();
+
+      if (order.orderType === 'BUY' || order.orderType === 'ADD_TO_POSITION') {
+        currentPosition += qty;
+        totalBuyQuantity += qty;
+        totalBuyCost += qty * price;
+      } else {
+        currentPosition -= qty;
+        totalSellQuantity += qty;
+        totalSellRevenue += qty * price;
+      }
+    }
+  }
+
+  // Validate the execution won't create negative position
+  const validation = validateExecution(
+    currentPosition,
+    execution.quantity,
+    execution.orderType,
+    trade.side
+  );
+
+  if (!validation.isValid) {
+    throw new Error(validation.error);
+  }
+
+  // Create the sub-order
+  const subOrder = await prisma.tradeSubOrder.create({
+    data: {
+      tradeId,
+      orderType: execution.orderType,
+      quantity: new Prisma.Decimal(execution.quantity),
+      price: new Prisma.Decimal(execution.price),
+      orderDate: execution.orderDate,
+      notes: execution.notes
+    }
+  });
+
+  // Update position calculations with new execution
+  if (execution.orderType === 'BUY' || execution.orderType === 'ADD_TO_POSITION') {
+    totalBuyQuantity += execution.quantity;
+    totalBuyCost += execution.quantity * execution.price;
+  } else {
+    totalSellQuantity += execution.quantity;
+    totalSellRevenue += execution.quantity * execution.price;
+  }
+
+  const newPosition = validation.newPosition!;
+
+  // Recalculate averages
+  const newAvgBuy = totalBuyQuantity > 0 ? totalBuyCost / totalBuyQuantity : 0;
+  const newAvgSell = totalSellQuantity > 0 ? totalSellRevenue / totalSellQuantity : 0;
+
+  // Update trade with new values
+  const updateData: any = {
+    size: new Prisma.Decimal(newPosition),
+    avgBuy: new Prisma.Decimal(newAvgBuy),
+    lastModifiedDate: new Date(),
+    executionCount: (trade.subOrders?.length || 0) + 1
+  };
+
+  if (totalSellQuantity > 0) {
+    updateData.avgSell = new Prisma.Decimal(newAvgSell);
+  }
+
+  // If position is fully closed, set close date and status
+  if (newPosition === 0) {
+    updateData.closeDate = execution.orderDate;
+    updateData.status = 'CLOSED'; // Will be updated to WIN/LOSS by recalculation
+  }
+
+  await prisma.trade.update({
+    where: { id: tradeId },
+    data: updateData
+  });
+
+  // Recalculate all trade metrics
+  await recalculateTradeFromExecutions(tradeId);
+
+  return subOrder;
+}
+
+/**
+ * Recalculate all trade metrics from sub-orders
+ * This ensures avgBuy, avgSell, size, and all calculations are accurate
+ */
+export async function recalculateTradeFromExecutions(tradeId: string) {
+  const trade = await prisma.trade.findUnique({
+    where: { id: tradeId },
+    include: {
+      subOrders: {
+        orderBy: {
+          orderDate: 'asc'
+        }
+      }
+    }
+  });
+
+  if (!trade) {
+    throw new Error('Trade not found');
+  }
+
+  // If no sub-orders, use existing calculation
+  if (!trade.subOrders || trade.subOrders.length === 0) {
+    await calculateTradeMetrics(tradeId);
+    return;
+  }
+
+  // Calculate from sub-orders
+  let currentPosition = 0;
+  let totalBuyQuantity = 0;
+  let totalBuyCost = 0;
+  let totalSellQuantity = 0;
+  let totalSellRevenue = 0;
+
+  for (const order of trade.subOrders) {
+    const qty = order.quantity.toNumber();
+    const price = order.price.toNumber();
+
+    if (order.orderType === 'BUY' || order.orderType === 'ADD_TO_POSITION') {
+      currentPosition += qty;
+      totalBuyQuantity += qty;
+      totalBuyCost += qty * price;
+    } else {
+      currentPosition -= qty;
+      totalSellQuantity += qty;
+      totalSellRevenue += qty * price;
+    }
+  }
+
+  const avgBuy = totalBuyQuantity > 0 ? totalBuyCost / totalBuyQuantity : 0;
+  const avgSell = totalSellQuantity > 0 ? totalSellRevenue / totalSellQuantity : 0;
+
+  // Calculate MAE/MFE from sub-orders if not already set
+  let mae = trade.mae?.toNumber();
+  let mfe = trade.mfe?.toNumber();
+
+  if (!mae || !mfe) {
+    const maeAndMfe = calculateMAEAndMFE(
+      trade.subOrders,
+      trade.side,
+      avgBuy
+    );
+    mae = mae || maeAndMfe.mae;
+    mfe = mfe || maeAndMfe.mfe;
+  }
+
+  // Calculate all metrics
+  const metrics = calculateAllTradeMetrics({
+    side: trade.side,
+    size: currentPosition > 0 ? currentPosition : totalBuyQuantity, // Use total buy if closed
+    avgBuy,
+    avgSell: totalSellQuantity > 0 ? avgSell : undefined,
+    entryPrice: avgBuy,
+    exitPrice: totalSellQuantity > 0 ? avgSell : undefined,
+    mae,
+    mfe
+  });
+
+  // Determine status
+  let status: TradeStatus = trade.status;
+  if (currentPosition === 0) {
+    // Position is closed
+    status = metrics.netReturn >= 0 ? 'WIN' : 'LOSS';
+  } else {
+    status = 'OPEN';
+  }
+
+  // Update trade
+  await prisma.trade.update({
+    where: { id: tradeId },
+    data: {
+      size: new Prisma.Decimal(currentPosition > 0 ? currentPosition : totalBuyQuantity),
+      avgBuy: new Prisma.Decimal(avgBuy),
+      avgSell: totalSellQuantity > 0 ? new Prisma.Decimal(avgSell) : null,
+      entryPrice: new Prisma.Decimal(avgBuy),
+      exitPrice: totalSellQuantity > 0 ? new Prisma.Decimal(avgSell) : null,
+      mae: mae ? new Prisma.Decimal(mae) : null,
+      mfe: mfe ? new Prisma.Decimal(mfe) : null,
+      netReturn: new Prisma.Decimal(metrics.netReturn),
+      netReturnPercent: new Prisma.Decimal(metrics.netReturnPercent),
+      bestExitDollar: new Prisma.Decimal(metrics.bestExitDollar),
+      bestExitPercent: new Prisma.Decimal(metrics.bestExitPercent),
+      missedExit: new Prisma.Decimal(metrics.missedExit),
+      status,
+      closeDate: currentPosition === 0 && trade.subOrders.length > 0
+        ? trade.subOrders[trade.subOrders.length - 1].orderDate
+        : trade.closeDate,
+      executionCount: trade.subOrders.length
+    }
+  });
+}
+
+/**
+ * Merge execution into an existing position or create new trade
+ * This is the main entry point for adding executions during imports
+ */
+export async function mergeExecutionIntoPosition(params: {
+  ticker: string;
+  portfolioId: string;
+  execution: {
+    orderType: SubOrderType;
+    quantity: number;
+    price: number;
+    orderDate: Date;
+    notes?: string;
+  };
+  side?: TradeSide;
+  type?: TradeType;
+  sourceId?: string;
+  importSource?: string;
+  importData?: any;
+}): Promise<{ trade: any; created: boolean; execution: any }> {
+  const { ticker, portfolioId, execution, side, type, sourceId, importSource, importData } = params;
+
+  // Try to find an open position
+  const { PositionService } = await import('./positionService');
+  const openTrade = await PositionService.findOpenTradeForSymbol(ticker, portfolioId);
+
+  if (openTrade) {
+    // Add to existing position
+    const subOrder = await addExecutionToTrade(openTrade.id, execution);
+
+    // Get updated trade
+    const updatedTrade = await getTradeById(openTrade.id);
+
+    return {
+      trade: updatedTrade,
+      created: false,
+      execution: subOrder
+    };
+  }
+
+  // No open position - create new trade
+  if (!side || !type) {
+    throw new Error('side and type are required when creating a new trade');
+  }
+
+  // Determine orderType for initial trade
+  const isEntry = execution.orderType === 'BUY' || execution.orderType === 'ADD_TO_POSITION';
+
+  const newTrade = await createTrade({
+    ticker,
+    portfolioId,
+    size: execution.quantity,
+    openDate: execution.orderDate,
+    side,
+    type,
+    sourceId,
+    importSource: importSource || 'manual',
+    importData,
+    avgBuy: isEntry ? execution.price : undefined,
+    entryPrice: isEntry ? execution.price : undefined,
+    originalOpenDate: execution.orderDate,
+    executionCount: 1
+  });
+
+  // Create the sub-order for tracking
+  const subOrder = await addSubOrder(newTrade.id, execution);
+
+  return {
+    trade: newTrade,
+    created: true,
+    execution: subOrder
   };
 }

@@ -131,6 +131,23 @@ export default function SettingsPage() {
               Create and manage text descriptors that will be attached to trades when developing the Trade Log.
             </p>
           </div>
+
+          {/* Portfolios Configuration Section */}
+          <div className="bg-card p-6 rounded-lg shadow-sm border">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-semibold">Portfolios</h3>
+              <Link
+                href="/settings/portfolios"
+                className="text-sm text-primary hover:underline"
+                onClick={() => logger.debug('Navigating to portfolios settings')}
+              >
+                Manage Portfolios
+              </Link>
+            </div>
+            <p className="text-sm text-muted-foreground">
+              Create and manage trading portfolios to organize your trades into separate accounts or strategies.
+            </p>
+          </div>
         </div>
       </div>
 

@@ -1,3 +1,156 @@
+## [11/20/2025] - Portfolio Management System & Trade Organization (Phase 0-3)
+
+### Added
+- **Complete Portfolio Management System** for organizing trades into separate accounts or strategies:
+  - Portfolio CRUD interface at `/settings/portfolios` with full management capabilities
+  - Portfolio configuration with name, description, default status, and archive functionality
+  - Database model `Portfolio` with proper indexing and trade relationships
+  - API endpoints for full portfolio management (`/api/portfolios`)
+  - Portfolio edit modal with validation and default portfolio handling
+  - Bulk archive/restore capabilities for portfolios
+  - Soft delete pattern: portfolios with trades are archived instead of deleted
+  - Auto-creation of "Main" portfolio as default on first run
+
+- **Trade-Portfolio Integration** throughout the application:
+  - Portfolio selection in manual trade creation form (`/trades/new`)
+  - Portfolio selection in trade import flow (`/trades/import`)
+  - Portfolio editing in trade edit form (`/trades/[id]/edit`)
+  - Portfolio display in trade list table (`/trades`)
+  - Portfolio display in trade detail view (`/trades/[id]`)
+  - Auto-assignment of default portfolio when not specified
+  - Portfolio column in trade list with portfolio name display
+
+- **Position Detection Service** (`lib/services/positionService.ts`):
+  - Portfolio-scoped position tracking for open trades
+  - `findOpenTradeForSymbol()`: Find open trade for ticker in portfolio
+  - `hasOpenPosition()`: Check if open position exists for ticker
+  - `getPositionDetails()`: Get detailed position info with size and averages
+  - `getAllOpenPositions()`: Get all open positions in portfolio
+  - `getOpenPositionsCount()`: Count open positions in portfolio
+  - `getOpenPositionTickers()`: List all tickers with open positions
+  - `findPotentialDuplicateTrades()`: Find duplicate trades with date tolerance
+  - `calculatePositionFromSubOrders()`: Calculate position from executions
+
+- **Execution Merger Logic** with comprehensive validation:
+  - `validateExecution()`: Prevent negative positions (overselling)
+  - `calculatePartialProfit()`: Calculate P&L on partial closes
+  - `addExecutionToTrade()`: Add execution to existing trade
+  - `recalculateTradeFromExecutions()`: Recalculate all trade metrics
+  - `mergeExecutionIntoPosition()`: Smart execution merger with position detection
+  - Weighted average calculations for entry/exit prices
+  - Running position tracking with buy/sell execution handling
+
+- **Duplicate Detection Service** (`lib/services/duplicateDetectionService.ts`):
+  - `findPotentialDuplicates()`: Find duplicate imports by ticker and date
+  - `compareImportData()`: Compare import with existing trades
+  - `shouldMergeWithExisting()`: Determine merge vs. create new
+  - `generateMergeWarning()`: User-friendly duplicate warnings
+  - Import source data comparison for exact duplicate detection
+  - Confidence levels: high, medium, low for duplicate matching
+  - Smart date tolerance (24 hours) for matching
+
+- **Enhanced Navigation Structure**:
+  - Reorganized left panel navigation with new order
+  - Updated order: Home, Weekly One Pager, Ideas, Journal, Trade Log, Analysis, Settings
+  - Consistent form field ordering across New Trade and Edit Trade pages
+  - Field order: Ticker, Size, Open Date, Close Date, Side, Portfolio, Type, Source
+
+### Changed
+- **Database Schema Updates**:
+  - Added `Portfolio` model with comprehensive portfolio management fields
+  - Added `portfolioId` to `Trade` model as required foreign key
+  - Added position tracking fields to `Trade`: `originalOpenDate`, `lastModifiedDate`, `executionCount`
+  - Updated all trade operations to require portfolio assignment
+  - Added proper indexing for portfolio-based queries: `[portfolioId]`, `[portfolioId, ticker, status]`
+  - Database migration applied successfully with default portfolio creation
+
+- **Trade Service Enhancements** (`lib/services/tradeService.ts`):
+  - `createTrade()`: Now requires portfolioId parameter
+  - `getAllTrades()`: Includes portfolio relation in results
+  - `getTradeById()`: Includes portfolio relation in results
+  - Enhanced with execution validation and merger logic
+  - Added partial profit calculation functions
+  - Added position tracking field updates
+
+- **API Layer Updates**:
+  - Trade creation (`POST /api/trades`): Auto-assigns default portfolio if not specified
+  - Trade listing (`GET /api/trades`): Includes portfolio in response
+  - Trade detail (`GET /api/trades/[id]`): Includes portfolio in response
+  - Import endpoint (`POST /api/trades/import`): Requires portfolio selection
+  - Added portfolio validation in all trade API routes
+
+- **UI/UX Improvements**:
+  - **Portfolio Settings Page**: Clean table view with archive/restore functionality
+  - **Portfolio Modals**: Fixed black background issues with proper light/dark mode support
+  - **Trade Forms**: Added portfolio dropdown with default selection
+  - **Trade List**: Added Portfolio column showing portfolio name
+  - **Trade Detail**: Added Portfolio field in Trade Details section
+  - **Import Page**: Added Portfolio selection card with validation
+  - All portfolio-related inputs have proper background colors for light/dark mode
+
+- **Form Field Consistency**:
+  - Standardized field order in New Trade and Edit Trade forms
+  - Order: Ticker, Size, Open Date, Close Date, Side, Portfolio, Type, Source
+  - Consistent styling and validation across all trade forms
+
+### Fixed
+- **Import Path Issues**: Fixed `@/lib/prisma` import errors by using `@/lib/db` throughout
+- **Modal Background Issues**: Fixed black backgrounds on portfolio modal inputs and checkboxes
+- **Portfolio Assignment**: Fixed trade creation failing due to missing portfolioId
+- **Trade Edit Form**: Fixed missing portfolio field in edit interface
+- **UI Consistency**: Fixed inconsistent field ordering between new and edit trade forms
+
+### Technical Implementation
+- **Database Layer**:
+  - Created `Portfolio` model with proper relationships
+  - Enhanced `Trade` model with portfolio foreign key and tracking fields
+  - Applied Prisma migration: `20251120_add_portfolios`
+  - Implemented soft delete pattern for portfolios
+
+- **Service Layer**:
+  - Created `PortfolioService` with complete CRUD operations
+  - Created `PositionService` for portfolio-scoped position detection
+  - Enhanced `tradeService` with execution validation and merger logic
+  - Created `DuplicateDetectionService` for import duplicate detection
+
+- **API Layer**:
+  - Created `/api/portfolios` routes for portfolio management
+  - Updated all trade API routes to handle portfolio relations
+  - Enhanced import API with portfolio validation
+
+- **Component Layer**:
+  - Created `PortfolioEditModal` component with form validation
+  - Updated all trade forms to include portfolio selection
+  - Enhanced trade list and detail views with portfolio display
+  - Added portfolio selection to import flow
+
+### Portfolio Features Explained
+- **Default Portfolio**: One portfolio must be default; auto-assigned when not specified
+- **Soft Delete**: Portfolios with trades are archived, not deleted, preserving data integrity
+- **Portfolio-Scoped Positions**: Open position detection works within portfolio boundaries
+- **Bulk Operations**: Archive/restore multiple portfolios simultaneously
+- **Auto-Creation**: "Main" portfolio created automatically on first application run
+
+### Position Tracking Features
+- **Open Position Detection**: Finds open trades by ticker within portfolio
+- **Execution Validation**: Prevents overselling (negative positions)
+- **Partial Profit Tracking**: Calculates P&L on partial closes while trade remains open
+- **Position Details**: Provides current position size, averages, and execution counts
+- **Duplicate Prevention**: Detects potential duplicate imports with confidence levels
+
+### Notes
+- All trades must belong to a portfolio (required field)
+- Position detection is scoped to portfolio + ticker combination
+- Multiple portfolios can have open positions in the same ticker
+- Default portfolio is auto-assigned when creating trades without portfolio specification
+- Archive functionality preserves historical data while hiding unused portfolios
+- Execution merger logic supports complex multi-execution trades
+- Duplicate detection helps prevent importing same trades multiple times
+- Full TypeScript type safety maintained throughout implementation
+- Foundation established for Phase 4 (ThinkOrSwim import) and Phase 5 (Import flow modifications)
+
+---
+
 ## [11/18/2025] - Ideas Component: Status Simplification & Quick Expire Feature
 
 ### Added

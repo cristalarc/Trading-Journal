@@ -18,6 +18,12 @@ interface Tag {
   category: string;
 }
 
+interface Portfolio {
+  id: string;
+  name: string;
+  isDefault: boolean;
+}
+
 interface Trade {
   id: string;
   tradeId: number;
@@ -28,6 +34,7 @@ interface Trade {
   size: number;
   openDate: string;
   closeDate?: string;
+  portfolioId?: string;
   sourceId?: string;
   entryPrice?: number;
   exitPrice?: number;
@@ -54,6 +61,7 @@ export default function EditTradePage() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [sources, setSources] = useState<Source[]>([]);
+  const [portfolios, setPortfolios] = useState<Portfolio[]>([]);
   const [setupTags, setSetupTags] = useState<Tag[]>([]);
   const [mistakeTags, setMistakeTags] = useState<Tag[]>([]);
   const [trade, setTrade] = useState<Trade | null>(null);
@@ -65,6 +73,7 @@ export default function EditTradePage() {
     closeDate: '',
     side: 'LONG' as 'LONG' | 'SHORT',
     type: 'SHARE' as 'SHARE' | 'OPTION',
+    portfolioId: '',
     sourceId: '',
     entryPrice: '',
     exitPrice: '',
@@ -91,6 +100,7 @@ export default function EditTradePage() {
       fetchTrade(params.id as string);
     }
     fetchSources();
+    fetchPortfolios();
     fetchTags();
   }, [params.id]);
 
@@ -107,6 +117,7 @@ export default function EditTradePage() {
           closeDate: data.closeDate ? data.closeDate.split('T')[0] : '',
           side: data.side,
           type: data.type,
+          portfolioId: data.portfolioId || '',
           sourceId: data.sourceId || '',
           entryPrice: data.entryPrice ? data.entryPrice.toString() : '',
           exitPrice: data.exitPrice ? data.exitPrice.toString() : '',
@@ -142,6 +153,18 @@ export default function EditTradePage() {
       }
     } catch (error) {
       console.error('Error fetching sources:', error);
+    }
+  };
+
+  const fetchPortfolios = async () => {
+    try {
+      const response = await fetch('/api/portfolios');
+      if (response.ok) {
+        const data = await response.json();
+        setPortfolios(data);
+      }
+    } catch (error) {
+      console.error('Error fetching portfolios:', error);
     }
   };
 
@@ -311,6 +334,24 @@ export default function EditTradePage() {
               >
                 <option value="LONG">Long</option>
                 <option value="SHORT">Short</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Portfolio *
+              </label>
+              <select
+                value={formData.portfolioId}
+                onChange={(e) => handleInputChange('portfolioId', e.target.value)}
+                className="w-full border rounded px-3 py-2 bg-white text-gray-900 placeholder-gray-500"
+                required
+              >
+                <option value="">Select Portfolio</option>
+                {portfolios.map((portfolio) => (
+                  <option key={portfolio.id} value={portfolio.id}>
+                    {portfolio.name} {portfolio.isDefault && '(Default)'}
+                  </option>
+                ))}
               </select>
             </div>
             <div>

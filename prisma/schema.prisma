@@ -264,12 +264,34 @@ enum IdeaStatus {
   expired
 }
 
+// Portfolio Model
+model Portfolio {
+  id            String   @id @default(uuid())
+  name          String   @db.VarChar(100)
+  description   String?  @db.VarChar(500)
+  isDefault     Boolean  @default(false) @map("is_default")
+  isArchived    Boolean  @default(false) @map("is_archived")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  trades        Trade[]
+
+  @@map("portfolios")
+  @@index([isDefault])
+  @@index([isArchived])
+}
+
 // Trade Log Models
 model Trade {
   id                String        @id @default(uuid())
   createdAt         DateTime      @default(now()) @map("created_at")
   updatedAt         DateTime      @updatedAt @map("updated_at")
-  
+
+  // Portfolio relationship
+  portfolio         Portfolio     @relation(fields: [portfolioId], references: [id])
+  portfolioId       String        @map("portfolio_id")
+
   // Required fields (marked with *)
   status            TradeStatus   @default(OPEN)
   tradeId           Int           @unique @map("trade_id") // Auto-incrementing ID
@@ -278,6 +300,11 @@ model Trade {
   sourceId          String?       @map("source_id")
   size              Decimal       @db.Decimal(12, 2)
   openDate          DateTime      @map("open_date")
+
+  // Position tracking fields
+  originalOpenDate  DateTime?     @map("original_open_date") // First execution date
+  lastModifiedDate  DateTime?     @map("last_modified_date") // Last execution added
+  executionCount    Int           @default(0) @map("execution_count")
   
   // Optional fields
   closeDate         DateTime?     @map("close_date")
@@ -342,6 +369,8 @@ model Trade {
   @@index([status])
   @@index([openDate])
   @@index([closeDate])
+  @@index([portfolioId])
+  @@index([portfolioId, ticker, status])
 }
 
 model TradeSubOrder {

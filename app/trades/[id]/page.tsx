@@ -29,6 +29,10 @@ interface Trade {
   bestExitDollar?: number;
   bestExitPercent?: number;
   missedExit?: number;
+  portfolio?: {
+    id: string;
+    name: string;
+  };
   source?: {
     id: string;
     name: string;
@@ -221,6 +225,10 @@ export default function TradeDetailPage() {
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Size</label>
                 <p className="text-lg font-semibold">{trade.size.toLocaleString()}</p>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Portfolio</label>
+                <p className="text-lg font-semibold">{trade.portfolio?.name || 'N/A'}</p>
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Open Date</label>

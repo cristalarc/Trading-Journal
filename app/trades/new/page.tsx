@@ -19,10 +19,17 @@ interface Tag {
   category: string;
 }
 
+interface Portfolio {
+  id: string;
+  name: string;
+  isDefault: boolean;
+}
+
 export default function NewTradePage() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [sources, setSources] = useState<Source[]>([]);
+  const [portfolios, setPortfolios] = useState<Portfolio[]>([]);
   const [setupTags, setSetupTags] = useState<Tag[]>([]);
   const [mistakeTags, setMistakeTags] = useState<Tag[]>([]);
   
@@ -33,6 +40,7 @@ export default function NewTradePage() {
     closeDate: '',
     side: 'LONG' as 'LONG' | 'SHORT',
     type: 'SHARE' as 'SHARE' | 'OPTION',
+    portfolioId: '',
     sourceId: '',
     entryPrice: '',
     exitPrice: '',
@@ -56,6 +64,7 @@ export default function NewTradePage() {
 
   useEffect(() => {
     fetchSources();
+    fetchPortfolios();
     fetchTags();
   }, []);
 
@@ -68,6 +77,23 @@ export default function NewTradePage() {
       }
     } catch (error) {
       console.error('Error fetching sources:', error);
+    }
+  };
+
+  const fetchPortfolios = async () => {
+    try {
+      const response = await fetch('/api/portfolios');
+      if (response.ok) {
+        const data = await response.json();
+        setPortfolios(data);
+        // Set default portfolio as selected
+        const defaultPortfolio = data.find((p: Portfolio) => p.isDefault);
+        if (defaultPortfolio) {
+          setFormData(prev => ({ ...prev, portfolioId: defaultPortfolio.id }));
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching portfolios:', error);
     }
   };
 
@@ -230,6 +256,24 @@ export default function NewTradePage() {
               >
                 <option value="LONG">Long</option>
                 <option value="SHORT">Short</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Portfolio *
+              </label>
+              <select
+                value={formData.portfolioId}
+                onChange={(e) => handleInputChange('portfolioId', e.target.value)}
+                className="w-full border rounded px-3 py-2 bg-white text-gray-900"
+                required
+              >
+                <option value="">Select Portfolio</option>
+                {portfolios.map((portfolio) => (
+                  <option key={portfolio.id} value={portfolio.id}>
+                    {portfolio.name} {portfolio.isDefault && '(Default)'}
+                  </option>
+                ))}
               </select>
             </div>
             <div>

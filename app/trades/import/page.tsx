@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -22,14 +22,43 @@ interface ImportResult {
   unmatchedTags?: UnmatchedTag[];
 }
 
+interface Portfolio {
+  id: string;
+  name: string;
+  isDefault: boolean;
+}
+
 export default function ImportTradesPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [importResult, setImportResult] = useState<ImportResult | null>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [importType, setImportType] = useState<'tradersync' | 'thinkorswim'>('tradersync');
+  const [portfolioId, setPortfolioId] = useState<string>('');
+  const [portfolios, setPortfolios] = useState<Portfolio[]>([]);
   const [showUnmatchedDialog, setShowUnmatchedDialog] = useState(false);
   const [unmatchedTags, setUnmatchedTags] = useState<UnmatchedTag[]>([]);
+
+  useEffect(() => {
+    fetchPortfolios();
+  }, []);
+
+  const fetchPortfolios = async () => {
+    try {
+      const response = await fetch('/api/portfolios');
+      if (response.ok) {
+        const data = await response.json();
+        setPortfolios(data);
+        // Set default portfolio as selected
+        const defaultPortfolio = data.find((p: Portfolio) => p.isDefault);
+        if (defaultPortfolio) {
+          setPortfolioId(defaultPortfolio.id);
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching portfolios:', error);
+    }
+  };
 
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -52,6 +81,7 @@ export default function ImportTradesPage() {
       const formData = new FormData();
       formData.append('file', selectedFile);
       formData.append('importType', importType);
+      formData.append('portfolioId', portfolioId);
 
       const response = await fetch('/api/trades/import', {
         method: 'POST',
@@ -158,6 +188,34 @@ export default function ImportTradesPage() {
                 </div>
               </div>
             )}
+          </div>
+        </Card>
+
+        {/* Portfolio Selection */}
+        <Card className="p-6">
+          <h2 className="text-xl font-semibold mb-4">Portfolio</h2>
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Select Portfolio *
+              </label>
+              <select
+                value={portfolioId}
+                onChange={(e) => setPortfolioId(e.target.value)}
+                className="w-full border rounded px-3 py-2 bg-white text-gray-900"
+                required
+              >
+                <option value="">Select Portfolio</option>
+                {portfolios.map((portfolio) => (
+                  <option key={portfolio.id} value={portfolio.id}>
+                    {portfolio.name} {portfolio.isDefault && '(Default)'}
+                  </option>
+                ))}
+              </select>
+              <p className="text-sm text-gray-500 mt-1">
+                All imported trades will be added to this portfolio
+              </p>
+            </div>
           </div>
         </Card>
 

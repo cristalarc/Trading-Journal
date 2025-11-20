@@ -1,5 +1,6 @@
 - Implement Trades
--- Implement the import module of trades. All trades, long or short, come in as Avg Buy.
+-- Implement the import module of trades. Auto recognize tags.
+-- Add Option identifier. Needs to identify what an option is and tie it to the Stock for reporting.
 
 --- Fix the Strategies section not having the new pending review component
 --- Create a list of assgining Setup 1 to Setup, Setup 4 to Return Qualification and so on.

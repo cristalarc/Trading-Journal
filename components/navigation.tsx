@@ -19,11 +19,11 @@ export function Navigation() {
       
       <ul className="space-y-2">
         <li>
-          <Link 
-            href="/" 
+          <Link
+            href="/"
             className={`flex items-center p-2 rounded-md transition-colors ${
-              isActive("/") 
-                ? "bg-sidebar-accent text-sidebar-accent-foreground" 
+              isActive("/")
+                ? "bg-sidebar-accent text-sidebar-accent-foreground"
                 : "hover:bg-sidebar-accent/50"
             }`}
           >
@@ -32,24 +32,11 @@ export function Navigation() {
           </Link>
         </li>
         <li>
-          <Link 
-            href="/journal" 
+          <Link
+            href="/weekly-one-pager"
             className={`flex items-center p-2 rounded-md transition-colors ${
-              isActive("/journal") || pathname.startsWith("/journal/") 
-                ? "bg-sidebar-accent text-sidebar-accent-foreground" 
-                : "hover:bg-sidebar-accent/50"
-            }`}
-          >
-            <BookOpen className="mr-2 h-5 w-5" />
-            <span>Journal</span>
-          </Link>
-        </li>
-        <li>
-          <Link 
-            href="/weekly-one-pager" 
-            className={`flex items-center p-2 rounded-md transition-colors ${
-              isActive("/weekly-one-pager") 
-                ? "bg-sidebar-accent text-sidebar-accent-foreground" 
+              isActive("/weekly-one-pager")
+                ? "bg-sidebar-accent text-sidebar-accent-foreground"
                 : "hover:bg-sidebar-accent/50"
             }`}
           >
@@ -58,11 +45,11 @@ export function Navigation() {
           </Link>
         </li>
         <li>
-          <Link 
-            href="/ideas" 
+          <Link
+            href="/ideas"
             className={`flex items-center p-2 rounded-md transition-colors ${
-              isActive("/ideas") || pathname.startsWith("/ideas/") 
-                ? "bg-sidebar-accent text-sidebar-accent-foreground" 
+              isActive("/ideas") || pathname.startsWith("/ideas/")
+                ? "bg-sidebar-accent text-sidebar-accent-foreground"
                 : "hover:bg-sidebar-accent/50"
             }`}
           >
@@ -71,11 +58,24 @@ export function Navigation() {
           </Link>
         </li>
         <li>
-          <Link 
-            href="/trades" 
+          <Link
+            href="/journal"
             className={`flex items-center p-2 rounded-md transition-colors ${
-              isActive("/trades") || pathname.startsWith("/trades/") 
-                ? "bg-sidebar-accent text-sidebar-accent-foreground" 
+              isActive("/journal") || pathname.startsWith("/journal/")
+                ? "bg-sidebar-accent text-sidebar-accent-foreground"
+                : "hover:bg-sidebar-accent/50"
+            }`}
+          >
+            <BookOpen className="mr-2 h-5 w-5" />
+            <span>Journal</span>
+          </Link>
+        </li>
+        <li>
+          <Link
+            href="/trades"
+            className={`flex items-center p-2 rounded-md transition-colors ${
+              isActive("/trades") || pathname.startsWith("/trades/")
+                ? "bg-sidebar-accent text-sidebar-accent-foreground"
                 : "hover:bg-sidebar-accent/50"
             }`}
           >
@@ -84,11 +84,11 @@ export function Navigation() {
           </Link>
         </li>
         <li>
-          <Link 
-            href="/analysis" 
+          <Link
+            href="/analysis"
             className={`flex items-center p-2 rounded-md transition-colors ${
-              isActive("/analysis") 
-                ? "bg-sidebar-accent text-sidebar-accent-foreground" 
+              isActive("/analysis")
+                ? "bg-sidebar-accent text-sidebar-accent-foreground"
                 : "hover:bg-sidebar-accent/50"
             }`}
           >
@@ -97,11 +97,11 @@ export function Navigation() {
           </Link>
         </li>
         <li>
-          <Link 
-            href="/settings" 
+          <Link
+            href="/settings"
             className={`flex items-center p-2 rounded-md transition-colors ${
-              isActive("/settings") 
-                ? "bg-sidebar-accent text-sidebar-accent-foreground" 
+              isActive("/settings")
+                ? "bg-sidebar-accent text-sidebar-accent-foreground"
                 : "hover:bg-sidebar-accent/50"
             }`}
           >

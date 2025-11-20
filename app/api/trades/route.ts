@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAllTrades, createTrade, getTradeStats } from '@/lib/services/tradeService';
+import { PortfolioService } from '@/lib/services/portfolioService';
 
 /**
  * GET /api/trades
@@ -84,7 +85,14 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const trade = await createTrade(body);
+    // Get portfolioId from body or use default portfolio
+    let portfolioId = body.portfolioId;
+    if (!portfolioId) {
+      const defaultPortfolio = await PortfolioService.ensureDefaultPortfolio();
+      portfolioId = defaultPortfolio.id;
+    }
+
+    const trade = await createTrade({ ...body, portfolioId });
     
     return NextResponse.json(trade, { status: 201 });
   } catch (error) {

@@ -276,6 +276,7 @@ export default function TradesPage() {
               <tr>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Trade ID</th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ticker</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Portfolio</th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Side</th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Size</th>
@@ -293,6 +294,9 @@ export default function TradesPage() {
                   </td>
                   <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900 font-medium">
                     {trade.ticker}
+                  </td>
+                  <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-600">
+                    {trade.portfolio?.name || 'N/A'}
                   </td>
                   <td className="px-4 py-4 whitespace-nowrap">
                     {getStatusBadge(trade.status)}
