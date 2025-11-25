@@ -1,3 +1,124 @@
+## [11/25/2025] - ThinkOrSwim Import System with Preview (Phase 4)
+
+### Added
+- **ThinkOrSwim Account Statement Import** for direct broker integration:
+  - Complete TOS CSV parser (`lib/services/tosImportService.ts`) supporting Account Statement format
+  - Automatic detection and extraction of "Account Trade History" section from TOS exports
+  - Smart date parsing for TOS format (MM/DD/YY HH:MM:SS) with proper 2-digit year conversion
+  - Symbol cleanup (BRK/B → BRK.B) for consistent ticker formatting
+  - Position effect detection (TO OPEN/TO CLOSE) for accurate trade status determination
+  - Side detection (LONG/SHORT) based on buy/sell actions and position effects
+  - Support for stocks, ETFs, and options with proper type classification
+
+- **Preview-Before-Import Workflow** for user validation:
+  - Two-step import process: Preview → Confirm
+  - Preview API endpoint (`/api/trades/import/tos`) for trade validation before import
+  - Confirm API endpoint (`/api/trades/import/tos/confirm`) for executing validated imports
+  - Interactive preview table showing all trades with validation status
+  - Summary cards displaying total, valid, and invalid trade counts
+  - Real-time validation with color-coded feedback (green = valid, red = invalid)
+  - Detailed error and warning messages for transparency
+
+- **Enhanced Import UI** with improved source selection:
+  - Card-style radio buttons for import source selection (Tradersync vs ThinkOrSwim)
+  - Visual feedback with border highlighting and background colors
+  - Selected state clearly indicated with blue border and light blue background
+  - Larger, more clickable selection areas for better UX
+  - Responsive grid layout adapting to screen size
+  - Consistent styling matching rest of application
+
+- **TOS-Specific Features**:
+  - Preview Trades button (eye icon) for TOS imports
+  - Trade validation before import to prevent bad data
+  - Separate table showing Symbol, Side, Type, Size, Entry, Exit, Date, and Status
+  - Import confirmation showing count of valid trades to be imported
+  - Cancel option to review and modify CSV before re-importing
+
+### Changed
+- **Import Page UI Redesign**:
+  - Replaced small radio buttons with large card-style selection buttons
+  - Import source cards now have proper light backgrounds (bg-gray-50) matching page theme
+  - Removed dark mode variants causing black background issues
+  - Enhanced hover states with border color changes
+  - Better visual hierarchy and spacing between options
+  - Consistent text colors (gray-900 for titles, gray-600 for descriptions)
+
+- **Date Handling Improvements**:
+  - Enhanced date parser with better validation and error handling
+  - UTC date creation to avoid timezone issues
+  - Robust 2-digit year conversion (25 → 2025)
+  - Fallback to current date for unparseable dates with error logging
+  - Date string to Date object conversion in confirm API for proper Prisma handling
+
+- **Import Instructions**:
+  - Added TOS-specific instructions for exporting from ThinkOrSwim
+  - Clear step-by-step guide for obtaining Account Statement CSV
+  - Important notes about preview workflow and symbol formatting
+  - Separate instruction sections for Tradersync vs TOS
+
+### Fixed
+- **Date Serialization Issues**: Fixed Date objects being serialized to strings during JSON transfer between frontend and API
+- **Invalid Date Errors**: Enhanced date parsing with comprehensive validation preventing "Invalid Date" errors in Prisma
+- **Dark Mode Background**: Removed dark mode classes causing black backgrounds on import source cards
+- **UI Consistency**: Import source cards now match white/light-gray theme of rest of page
+
+### Technical Implementation
+- **Parser Layer** (`lib/services/tosImportService.ts`):
+  - `parseTOSCsv()`: Main CSV parser with section detection
+  - `parseCSVLine()`: Handles quoted values and comma-separated data
+  - `parseRowToObject()`: Maps CSV columns to trade object properties
+  - `convertTOSRowToTrade()`: Converts TOS format to internal trade format
+  - `parseExecTime()`: Robust date/time parser with validation
+  - `validateTOSTrade()`: Comprehensive trade data validation
+  - `groupTradesBySymbol()`: Groups trades for position detection
+
+- **API Layer**:
+  - Preview endpoint: Validates trades and returns preview data
+  - Confirm endpoint: Imports validated trades with date deserialization
+  - Proper error handling and user-friendly error messages
+  - Portfolio validation ensuring valid portfolio selection
+
+- **UI Layer**:
+  - Preview state management with React hooks
+  - Conditional rendering based on import type
+  - Preview table with comprehensive trade information
+  - Import confirmation dialog with trade count display
+  - Error/warning display with proper styling
+
+### TOS Import Workflow
+1. User selects "ThinkOrSwim" import source (clear card-style button)
+2. User selects portfolio from dropdown
+3. User uploads TOS Account Statement CSV file
+4. User clicks "Preview Trades" button (eye icon)
+5. System parses CSV and validates all trades
+6. Preview table displays:
+   - Summary: Total, Valid, and Invalid trade counts
+   - Trade table: All trades with validation status
+   - Errors/Warnings: Clear feedback on any issues
+7. User reviews preview and clicks "Import X Valid Trades"
+8. System imports only valid trades to selected portfolio
+9. Success message displays with import results
+
+### TOS CSV Format Support
+- **Account Trade History Section**: Automatically located and parsed
+- **Supported Fields**: Exec Time, Spread, Side, Qty, Pos Effect, Symbol, Exp, Strike, Type, Price, Net Price, Order Type
+- **Trade Types**: STOCK, ETF, OPTION
+- **Position Effects**: TO OPEN (opens position), TO CLOSE (closes position)
+- **Sides**: BUY (long), SELL (short)
+- **Symbol Format**: Handles "/" in symbols (BRK/B) and converts to "." (BRK.B)
+
+### Notes
+- Only valid trades are imported; invalid trades are skipped with clear error messages
+- Each TOS execution is imported as a separate trade (future: merge into positions)
+- Date parsing handles TOS's 2-digit year format robustly
+- Preview workflow prevents bad imports and gives user control
+- Foundation ready for Phase 5: Position detection integration
+- All date handling uses UTC to prevent timezone-related bugs
+- Import source selection now visually consistent with rest of application
+- Card-style buttons significantly improve UX over small radio buttons
+
+---
+
 ## [11/20/2025] - Portfolio Management System & Trade Organization (Phase 0-3)
 
 ### Added

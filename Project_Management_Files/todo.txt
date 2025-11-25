@@ -1,4 +1,5 @@
 - Implement Trades
+-- Handle trades imported which are just the exit trade and is not matched to an open trade.
 -- Implement the import module of trades. Auto recognize tags.
 -- Add Option identifier. Needs to identify what an option is and tie it to the Stock for reporting.
 
