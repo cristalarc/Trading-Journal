@@ -28,6 +28,10 @@ interface Trade {
   bestExitDollar?: number;
   bestExitPercent?: number;
   missedExit?: number;
+  portfolio?: {
+    id: string;
+    name: string;
+  };
   source?: {
     id: string;
     name: string;
@@ -127,7 +131,15 @@ export default function TradesPage() {
 
   const getStatusBadge = (status: string) => {
     if (status === 'OPEN') {
-      return <Badge variant="outline" className="bg-yellow-100 text-yellow-800">Open</Badge>;
+      return (
+        <Badge variant="outline" className="bg-yellow-100 text-yellow-800 border-yellow-400">
+          <span className="relative flex h-2 w-2 mr-1.5">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-yellow-500 opacity-75"></span>
+            <span className="relative inline-flex rounded-full h-2 w-2 bg-yellow-500"></span>
+          </span>
+          Open Position
+        </Badge>
+      );
     } else if (status === 'CLOSED') {
       return <Badge variant="outline" className="bg-gray-100 text-gray-800">Closed</Badge>;
     } else if (status === 'WIN') {
@@ -288,12 +300,19 @@ export default function TradesPage() {
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
               {trades.map((trade) => (
-                <tr key={trade.id} className="hover:bg-gray-50">
+                <tr
+                  key={trade.id}
+                  className={`hover:bg-gray-50 ${
+                    trade.status === 'OPEN' ? 'bg-yellow-50/50 border-l-4 border-l-yellow-400' : ''
+                  }`}
+                >
                   <td className="px-4 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                     #{trade.tradeId}
                   </td>
-                  <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900 font-medium">
-                    {trade.ticker}
+                  <td className="px-4 py-4 whitespace-nowrap text-sm font-medium">
+                    <span className={trade.status === 'OPEN' ? 'text-yellow-700 font-semibold' : 'text-gray-900'}>
+                      {trade.ticker}
+                    </span>
                   </td>
                   <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-600">
                     {trade.portfolio?.name || 'N/A'}

@@ -1,3 +1,85 @@
+## [12/04/2025] - Open Position Indicators & Dashboard Redesign (Phase 6)
+
+### Added
+- **Open Position Visual Indicators** throughout the application:
+  - Pulsing yellow dot animation on trade list for open positions
+  - Yellow left border highlighting for open trade rows in the table
+  - Enhanced status badge with pulsing animation on trade detail page
+  - "Open Position" badge text with animated indicator for clarity
+
+- **Redesigned Dashboard** with enhanced open positions focus:
+  - New stats cards grid: Total Trades, Open Positions (with pulsing indicator), Closed Trades, Total P&L
+  - **Open Positions Panel**: Dedicated 2-column wide panel showing top 5 open positions
+  - Position cards display: Ticker, Side (LONG/SHORT), Portfolio, Size, Entry Price, Open Date
+  - Direct links to trade details from open position cards
+  - "View All" button linking to filtered open trades view
+  - Empty state with "Create Trade" call-to-action
+
+- **Quick Actions Panel** on dashboard:
+  - New Trade, Import Trades, Journal, Ideas, Analysis shortcuts
+  - Clean card-based layout with icons and descriptions
+  - Improved navigation accessibility from home page
+
+- **Enhanced Execution History View** on trade detail page:
+  - Running position column showing cumulative position after each execution
+  - Position summary section displaying final position status
+  - Color-coded position indicators (green for long, red for short, gray for flat)
+  - Clear execution type labeling (BUY/SELL)
+
+### Changed
+- **Trade List Table** (`app/trades/page.tsx`):
+  - Open trades now have yellow background tint (`bg-yellow-50/50`)
+  - Left border indicator (`border-l-4 border-l-yellow-400`) for quick visual identification
+  - Status badge enhanced with pulsing animation for "Open Position" status
+  - Improved visual hierarchy distinguishing open from closed trades
+
+- **Trade Detail Page** (`app/trades/[id]/page.tsx`):
+  - Status badge now shows pulsing indicator for open trades
+  - Execution history table includes running position calculation
+  - Added position summary after execution list
+  - Enhanced visual feedback for trade status
+
+- **Dashboard Page** (`app/page.tsx`):
+  - Complete redesign from simple stats to comprehensive trading overview
+  - Two-column layout with open positions panel and quick actions
+  - Stats cards with color-coded indicators and relevant icons
+  - P&L card shows trending icon based on positive/negative returns
+
+### Technical Implementation
+- **Pulsing Animation Pattern**:
+  ```tsx
+  <span className="relative flex h-2 w-2 mr-1.5">
+    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-yellow-500 opacity-75"></span>
+    <span className="relative inline-flex rounded-full h-2 w-2 bg-yellow-500"></span>
+  </span>
+  ```
+
+- **Running Position Calculation**:
+  - Tracks cumulative position through each execution
+  - BUY orders add to position, SELL orders subtract
+  - Final position determines trade status indicator
+
+- **Dashboard Data Fetching**:
+  - Fetches stats from `/api/trades?stats=true`
+  - Fetches open trades from `/api/trades?status=OPEN`
+  - Displays top 5 open positions with pagination link
+
+### UI/UX Improvements
+- **Visual Consistency**: Yellow theme for all open position indicators
+- **Animation Subtlety**: Pulsing animation draws attention without being distracting
+- **Information Density**: Dashboard provides quick overview of trading status
+- **Navigation Flow**: Easy access to open positions from multiple entry points
+- **Responsive Design**: Grid layouts adapt to screen size
+
+### Notes
+- Open position indicators help traders quickly identify active trades requiring attention
+- Dashboard redesign focuses on actionable information (open positions, quick actions)
+- Execution history enhancements provide better understanding of position building
+- All animations use Tailwind CSS for consistency and performance
+- Phase 6 completes UI enhancement goals from the implementation roadmap
+
+---
+
 ## [11/25/2025] - ThinkOrSwim Import System with Preview (Phase 4)
 
 ### Added

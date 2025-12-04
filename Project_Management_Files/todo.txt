@@ -23,6 +23,7 @@
 - Implement Positions and Thesis (modules where I can have my positions and build investment thesis for them)
 
 
+- Does WOP have a feature to clear all entries automatically? If so, not working
 - Implement Thinkorswim import.
 - Implement Investment Thesis
 

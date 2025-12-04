@@ -129,7 +129,15 @@ export default function TradeDetailPage() {
 
   const getStatusBadge = (status: string) => {
     if (status === 'OPEN') {
-      return <Badge variant="outline" className="bg-yellow-100 text-yellow-800">Open</Badge>;
+      return (
+        <Badge variant="outline" className="bg-yellow-100 text-yellow-800 border-yellow-400 px-3 py-1">
+          <span className="relative flex h-2 w-2 mr-2">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-yellow-500 opacity-75"></span>
+            <span className="relative inline-flex rounded-full h-2 w-2 bg-yellow-500"></span>
+          </span>
+          Open Position
+        </Badge>
+      );
     } else if (status === 'CLOSED') {
       return <Badge variant="outline" className="bg-gray-100 text-gray-800">Closed</Badge>;
     } else if (status === 'WIN') {
@@ -332,31 +340,95 @@ export default function TradeDetailPage() {
             </div>
           </Card>
 
-          {/* Sub Orders */}
+          {/* Execution History */}
           {trade.subOrders && trade.subOrders.length > 0 && (
             <Card className="p-6">
-              <h2 className="text-xl font-semibold mb-4">Sub Orders</h2>
+              <h2 className="text-xl font-semibold mb-4">Execution History</h2>
               <div className="overflow-x-auto">
                 <table className="w-full">
                   <thead className="bg-gray-50">
                     <tr>
-                      <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Type</th>
+                      <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
+                      <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Action</th>
                       <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Quantity</th>
                       <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Price</th>
-                      <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
+                      <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Position</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-200">
-                    {trade.subOrders.map((order: any, index: number) => (
-                      <tr key={index}>
-                        <td className="px-4 py-2 text-sm">{order.orderType}</td>
-                        <td className="px-4 py-2 text-sm">{order.quantity.toLocaleString()}</td>
-                        <td className="px-4 py-2 text-sm">{formatCurrency(order.price)}</td>
-                        <td className="px-4 py-2 text-sm">{formatDate(order.orderDate)}</td>
-                      </tr>
-                    ))}
+                    {(() => {
+                      let runningPosition = 0;
+                      return trade.subOrders.map((order: any, index: number) => {
+                        // Calculate running position
+                        const isBuy = order.orderType === 'BUY' || order.orderType === 'ADD_TO_POSITION';
+                        const qty = typeof order.quantity === 'number' ? order.quantity : parseFloat(order.quantity);
+                        runningPosition = isBuy ? runningPosition + qty : runningPosition - qty;
+
+                        // Determine action color
+                        const actionColor = isBuy ? 'text-green-600' : 'text-red-600';
+                        const actionBg = isBuy ? 'bg-green-50' : 'bg-red-50';
+                        const actionLabel = order.orderType === 'BUY' ? 'BUY (Open)' :
+                                           order.orderType === 'SELL' ? 'SELL (Close)' :
+                                           order.orderType === 'ADD_TO_POSITION' ? 'ADD' :
+                                           order.orderType === 'REDUCE_POSITION' ? 'REDUCE' :
+                                           order.orderType;
+
+                        return (
+                          <tr key={index} className="hover:bg-gray-50">
+                            <td className="px-4 py-3 text-sm text-gray-900">
+                              {formatDate(order.orderDate)}
+                            </td>
+                            <td className="px-4 py-3">
+                              <span className={`inline-flex items-center px-2 py-1 rounded text-xs font-medium ${actionBg} ${actionColor}`}>
+                                {actionLabel}
+                              </span>
+                            </td>
+                            <td className="px-4 py-3 text-sm text-gray-900">
+                              <span className={actionColor}>
+                                {isBuy ? '+' : '-'}{qty.toLocaleString()}
+                              </span>
+                            </td>
+                            <td className="px-4 py-3 text-sm text-gray-900">
+                              {formatCurrency(order.price)}
+                            </td>
+                            <td className="px-4 py-3 text-sm font-medium">
+                              <span className={runningPosition > 0 ? 'text-blue-600' : runningPosition < 0 ? 'text-orange-600' : 'text-gray-600'}>
+                                {runningPosition.toLocaleString()}
+                              </span>
+                            </td>
+                          </tr>
+                        );
+                      });
+                    })()}
                   </tbody>
                 </table>
+              </div>
+              {/* Execution Summary */}
+              <div className="mt-4 pt-4 border-t border-gray-200">
+                <div className="grid grid-cols-3 gap-4 text-sm">
+                  <div>
+                    <span className="text-gray-500">Total Executions:</span>
+                    <span className="ml-2 font-medium">{trade.subOrders.length}</span>
+                  </div>
+                  <div>
+                    <span className="text-gray-500">Total Bought:</span>
+                    <span className="ml-2 font-medium text-green-600">
+                      {trade.subOrders
+                        .filter((o: any) => o.orderType === 'BUY' || o.orderType === 'ADD_TO_POSITION')
+                        .reduce((sum: number, o: any) => sum + (typeof o.quantity === 'number' ? o.quantity : parseFloat(o.quantity)), 0)
+                        .toLocaleString()}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-gray-500">Total Sold:</span>
+                    <span className="ml-2 font-medium text-red-600">
+                      {trade.subOrders
+                        .filter((o: any) => o.orderType === 'SELL' || o.orderType === 'REDUCE_POSITION')
+                        .reduce((sum: number, o: any) => sum + (typeof o.quantity === 'number' ? o.quantity : parseFloat(o.quantity)), 0)
+                        .toLocaleString()}
+                    </span>
+                  </div>
+                </div>
               </div>
             </Card>
           )}
