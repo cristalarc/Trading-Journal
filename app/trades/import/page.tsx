@@ -17,6 +17,7 @@ interface ImportResult {
   success: boolean;
   message: string;
   tradesCreated: number;
+  tradesMerged?: number;
   errors: string[];
   warnings?: string[];
   unmatchedTags?: UnmatchedTag[];
@@ -41,12 +42,21 @@ interface TOSPreviewTrade {
     valid: boolean;
     errors: string[];
   };
+  positionInfo?: {
+    hasExistingPosition: boolean;
+    existingTradeId?: string;
+    existingTradeSize?: number;
+    action: 'CREATE' | 'MERGE';
+    mergeDescription?: string;
+  };
 }
 
 interface TOSPreview {
   totalTrades: number;
   validTrades: number;
   invalidTrades: number;
+  newTrades: number;
+  mergedTrades: number;
   trades: TOSPreviewTrade[];
   errors: string[];
   warnings: string[];
@@ -116,6 +126,7 @@ export default function ImportTradesPage() {
     try {
       const formData = new FormData();
       formData.append('file', selectedFile);
+      formData.append('portfolioId', portfolioId);
 
       const response = await fetch('/api/trades/import/tos', {
         method: 'POST',
@@ -128,7 +139,7 @@ export default function ImportTradesPage() {
         setTosPreview(result.preview);
         setShowPreview(true);
       } else {
-        alert('Failed to preview TOS import');
+        alert(result.error || 'Failed to preview TOS import');
       }
     } catch (error) {
       console.error('Error previewing TOS import:', error);
@@ -163,10 +174,19 @@ export default function ImportTradesPage() {
       const result = await response.json();
 
       if (result.success && result.results) {
+        const created = result.results.created || 0;
+        const merged = result.results.merged || 0;
+        let message = 'Import completed';
+        if (merged > 0) {
+          message = `Import completed: ${created} new trade(s), ${merged} merged into existing positions`;
+        } else {
+          message = `Import completed: ${created} trade(s) created`;
+        }
         setImportResult({
           success: true,
-          message: 'Import completed',
-          tradesCreated: result.results.successful,
+          message,
+          tradesCreated: created,
+          tradesMerged: merged,
           errors: result.results.errors || [],
         });
         setTosPreview(null);
@@ -175,7 +195,7 @@ export default function ImportTradesPage() {
         const fileInput = document.getElementById('file-input') as HTMLInputElement;
         if (fileInput) fileInput.value = '';
       } else {
-        alert('Failed to import TOS trades');
+        alert(result.error || 'Failed to import TOS trades');
       }
     } catch (error) {
       console.error('Error confirming TOS import:', error);
@@ -426,23 +446,43 @@ export default function ImportTradesPage() {
         {/* TOS Preview Table */}
         {showPreview && tosPreview && (
           <Card className="p-6">
-            <h2 className="text-xl font-semibold mb-4">Preview: {tosPreview.totalTrades} Trade(s) Found</h2>
+            <h2 className="text-xl font-semibold mb-4">Preview: {tosPreview.totalTrades} Execution(s) Found</h2>
 
             {/* Summary */}
-            <div className="grid grid-cols-3 gap-4 mb-6">
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
               <div className="bg-blue-50 border border-blue-200 rounded p-4">
-                <div className="text-sm text-blue-600">Total Trades</div>
+                <div className="text-sm text-blue-600">Total</div>
                 <div className="text-2xl font-bold text-blue-900">{tosPreview.totalTrades}</div>
               </div>
               <div className="bg-green-50 border border-green-200 rounded p-4">
-                <div className="text-sm text-green-600">Valid Trades</div>
+                <div className="text-sm text-green-600">Valid</div>
                 <div className="text-2xl font-bold text-green-900">{tosPreview.validTrades}</div>
               </div>
               <div className="bg-red-50 border border-red-200 rounded p-4">
-                <div className="text-sm text-red-600">Invalid Trades</div>
+                <div className="text-sm text-red-600">Invalid</div>
                 <div className="text-2xl font-bold text-red-900">{tosPreview.invalidTrades}</div>
               </div>
+              <div className="bg-purple-50 border border-purple-200 rounded p-4">
+                <div className="text-sm text-purple-600">New Trades</div>
+                <div className="text-2xl font-bold text-purple-900">{tosPreview.newTrades || 0}</div>
+              </div>
+              <div className="bg-orange-50 border border-orange-200 rounded p-4">
+                <div className="text-sm text-orange-600">Merge to Existing</div>
+                <div className="text-2xl font-bold text-orange-900">{tosPreview.mergedTrades || 0}</div>
+              </div>
             </div>
+
+            {/* Position Info Notice */}
+            {(tosPreview.mergedTrades || 0) > 0 && (
+              <div className="bg-orange-50 border border-orange-200 rounded p-4 mb-4">
+                <p className="font-medium text-orange-800 mb-1">Position Merging Detected</p>
+                <p className="text-sm text-orange-700">
+                  {tosPreview.mergedTrades} execution(s) will be merged into existing open positions.
+                  Look for the <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-orange-100 text-orange-800 mx-1">MERGE</span>
+                  badge in the table below.
+                </p>
+              </div>
+            )}
 
             {/* Errors and Warnings */}
             {tosPreview.errors.length > 0 && (
@@ -476,26 +516,52 @@ export default function ImportTradesPage() {
                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Side</th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Size</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Entry</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Exit</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Price</th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Action</th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
                   {tosPreview.trades.map((trade, index) => (
-                    <tr key={index} className={!trade.validation.valid ? 'bg-red-50' : ''}>
+                    <tr
+                      key={index}
+                      className={`${
+                        !trade.validation.valid
+                          ? 'bg-red-50'
+                          : trade.positionInfo?.action === 'MERGE'
+                          ? 'bg-orange-50/50'
+                          : ''
+                      }`}
+                    >
                       <td className="px-4 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{trade.ticker}</td>
                       <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-600">{trade.side}</td>
                       <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-600">{trade.type}</td>
                       <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-600">{trade.size}</td>
                       <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-600">
-                        {trade.entryPrice ? `$${trade.entryPrice.toFixed(2)}` : '-'}
-                      </td>
-                      <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-600">
-                        {trade.exitPrice ? `$${trade.exitPrice.toFixed(2)}` : '-'}
+                        {trade.entryPrice ? `$${trade.entryPrice.toFixed(2)}` : ''}
+                        {trade.exitPrice ? `$${trade.exitPrice.toFixed(2)}` : ''}
                       </td>
                       <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-600">{formatDate(trade.openDate)}</td>
+                      <td className="px-4 py-4 text-sm">
+                        {trade.positionInfo?.action === 'MERGE' ? (
+                          <div>
+                            <span className="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-orange-100 text-orange-800">
+                              MERGE
+                            </span>
+                            <p className="text-xs text-gray-500 mt-1 max-w-xs">{trade.positionInfo.mergeDescription}</p>
+                          </div>
+                        ) : trade.positionInfo?.action === 'CREATE' ? (
+                          <div>
+                            <span className="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-purple-100 text-purple-800">
+                              NEW
+                            </span>
+                            <p className="text-xs text-gray-500 mt-1 max-w-xs">{trade.positionInfo.mergeDescription}</p>
+                          </div>
+                        ) : (
+                          <span className="text-gray-400">-</span>
+                        )}
+                      </td>
                       <td className="px-4 py-4 whitespace-nowrap text-sm">
                         {trade.validation.valid ? (
                           <span className="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
@@ -521,7 +587,11 @@ export default function ImportTradesPage() {
                 className="flex items-center gap-2"
               >
                 <Upload className="h-4 w-4" />
-                {loading ? 'Importing...' : `Import ${tosPreview.validTrades} Valid Trade(s)`}
+                {loading
+                  ? 'Importing...'
+                  : tosPreview.mergedTrades > 0
+                  ? `Import ${tosPreview.validTrades} (${tosPreview.newTrades} new, ${tosPreview.mergedTrades} merge)`
+                  : `Import ${tosPreview.validTrades} Valid Trade(s)`}
               </Button>
               <Button
                 variant="outline"
@@ -596,8 +666,9 @@ export default function ImportTradesPage() {
                 ) : (
                   <>
                     <li>• Preview your trades before importing to verify accuracy</li>
-                    <li>• Only valid trades will be imported</li>
-                    <li>• Each execution is imported as a separate trade</li>
+                    <li>• <strong>Position Detection:</strong> Executions for existing open positions will be merged automatically</li>
+                    <li>• Look for <span className="text-orange-600 font-medium">MERGE</span> badges in preview to see which executions will be added to existing trades</li>
+                    <li>• New positions will create new trades, marked with <span className="text-purple-600 font-medium">NEW</span> badge</li>
                     <li>• Symbols with "/" will be converted to "." (e.g., BRK/B → BRK.B)</li>
                   </>
                 )}
@@ -630,7 +701,15 @@ export default function ImportTradesPage() {
 
               {importResult.success && (
                 <p className="text-green-700">
-                  Successfully created {importResult.tradesCreated} trade(s).
+                  {importResult.tradesMerged && importResult.tradesMerged > 0 ? (
+                    <>
+                      Successfully created {importResult.tradesCreated} trade(s) and merged {importResult.tradesMerged} execution(s) into existing positions.
+                    </>
+                  ) : (
+                    <>
+                      Successfully created {importResult.tradesCreated} trade(s).
+                    </>
+                  )}
                 </p>
               )}
 

@@ -46,6 +46,14 @@ export interface TOSParsedTrade {
     price: number;
     posEffect: string;
   };
+  // Position detection fields (populated during preview with portfolio context)
+  positionInfo?: {
+    hasExistingPosition: boolean;
+    existingTradeId?: string;
+    existingTradeSize?: number;
+    action: 'CREATE' | 'MERGE';
+    mergeDescription?: string;
+  };
 }
 
 /**
@@ -403,4 +411,99 @@ export function groupTradesBySymbol(trades: TOSParsedTrade[]): Map<string, TOSPa
   }
 
   return grouped;
+}
+
+/**
+ * Detect existing positions for trades and add position info
+ * This is called during preview to show users which trades will be merged
+ */
+export async function detectExistingPositions(
+  trades: TOSParsedTrade[],
+  portfolioId: string
+): Promise<TOSParsedTrade[]> {
+  // Dynamic import to avoid circular dependencies
+  const { PositionService } = await import('./positionService');
+
+  const enrichedTrades: TOSParsedTrade[] = [];
+
+  for (const trade of trades) {
+    // Check if there's an existing open position for this ticker
+    const existingTrade = await PositionService.findOpenTradeForSymbol(
+      trade.ticker,
+      portfolioId
+    );
+
+    if (existingTrade) {
+      // Get position details
+      const positionDetails = await PositionService.getPositionDetails(
+        trade.ticker,
+        portfolioId
+      );
+
+      const currentSize = positionDetails?.currentPosition || Number(existingTrade.size);
+      const subOrder = trade.subOrders[0];
+      const isAddingToPosition = subOrder.orderType === 'BUY' || subOrder.orderType === 'ADD_TO_POSITION';
+
+      let mergeDescription: string;
+      if (isAddingToPosition) {
+        mergeDescription = `Add ${trade.size} shares to existing position of ${currentSize} shares (Trade #${existingTrade.tradeId})`;
+      } else {
+        const newSize = currentSize - trade.size;
+        if (newSize <= 0) {
+          mergeDescription = `Close position: Sell ${trade.size} of ${currentSize} shares (Trade #${existingTrade.tradeId})`;
+        } else {
+          mergeDescription = `Reduce position: Sell ${trade.size} of ${currentSize} shares, ${newSize} remaining (Trade #${existingTrade.tradeId})`;
+        }
+      }
+
+      enrichedTrades.push({
+        ...trade,
+        positionInfo: {
+          hasExistingPosition: true,
+          existingTradeId: existingTrade.id,
+          existingTradeSize: currentSize,
+          action: 'MERGE',
+          mergeDescription,
+        },
+      });
+    } else {
+      // No existing position - this will create a new trade
+      enrichedTrades.push({
+        ...trade,
+        positionInfo: {
+          hasExistingPosition: false,
+          action: 'CREATE',
+          mergeDescription: `Create new ${trade.side} position with ${trade.size} shares`,
+        },
+      });
+    }
+  }
+
+  return enrichedTrades;
+}
+
+/**
+ * Get summary of import actions
+ */
+export function getImportSummary(trades: TOSParsedTrade[]): {
+  newTrades: number;
+  mergedTrades: number;
+  totalExecutions: number;
+} {
+  let newTrades = 0;
+  let mergedTrades = 0;
+
+  for (const trade of trades) {
+    if (trade.positionInfo?.action === 'MERGE') {
+      mergedTrades++;
+    } else {
+      newTrades++;
+    }
+  }
+
+  return {
+    newTrades,
+    mergedTrades,
+    totalExecutions: trades.length,
+  };
 }

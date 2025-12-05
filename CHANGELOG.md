@@ -1,3 +1,155 @@
+## [12/05/2025] - Manual Execution Entry (Phase 7)
+
+### Added
+- **Manual Execution Entry Dialog** for adding executions to existing trades:
+  - Clean modal interface for entering execution details
+  - Four order types: BUY, SELL, ADD_TO_POSITION, REDUCE_POSITION
+  - Color-coded order type buttons (green for BUY, red for SELL, blue for ADD, orange for REDUCE)
+  - Quantity and price input fields with validation
+  - Date and time pickers for precise execution timestamp
+  - Optional notes field for execution context
+  - Real-time position preview showing impact of execution
+
+- **Add Execution Button** on trade detail page:
+  - Appears next to "Execution History" heading for OPEN trades only
+  - Plus icon with "Add Execution" label
+  - Disabled for closed trades to prevent modifications
+
+- **Execution API Endpoint** (`/api/trades/[id]/executions`):
+  - POST endpoint for adding executions to trades
+  - Validates order type, quantity, price, and date
+  - Prevents negative position errors
+  - Returns updated trade and execution details
+  - Automatically recalculates trade metrics after adding execution
+
+### Changed
+- **Trade Detail Page** (`app/trades/[id]/page.tsx`):
+  - Added "Add Execution" button to execution history section
+  - Integrated AddExecutionDialog component
+  - Automatically refreshes trade data after execution added
+  - Shows current position in dialog for validation
+
+### Technical Implementation
+- **Validation Logic**:
+  - Checks quantity and price are positive numbers
+  - Prevents overselling (selling more than current position)
+  - Validates execution date format
+  - Only allows adding executions to OPEN trades
+
+- **Position Management**:
+  - Uses existing `addExecutionToTrade()` from tradeService
+  - Automatically updates trade size, avgBuy, avgSell
+  - Recalculates all trade metrics (net return, MAE/MFE, etc.)
+  - Closes trade if final position reaches zero
+
+- **UI/UX Features**:
+  - Position preview shows before/after position
+  - Warning when execution will close position
+  - Color-coded order types for quick visual identification
+  - Form validation prevents invalid submissions
+  - Loading states during API calls
+
+### User Benefits
+- **Flexible Position Building**: Add executions as trades develop without creating duplicate trades
+- **Accurate Tracking**: Each execution properly tracked with timestamp and price
+- **Position Safety**: Validation prevents accidental overselling
+- **Complete History**: All executions visible in execution history table
+- **Automatic Calculations**: Metrics updated automatically after each execution
+
+### Notes
+- Only available for OPEN trades (closed trades cannot be modified)
+- Executions are added to existing trade, preserving original trade ID
+- Trade automatically closes when all shares are sold
+- All execution types supported: entry, add, reduce, exit
+- Complements Phase 5's automatic merging during import
+
+---
+
+## [12/04/2025] - Position Detection in Import Flow (Phase 5)
+
+### Added
+- **Automatic Position Detection** during TOS import:
+  - System detects existing open positions when importing new executions
+  - Executions for existing positions are automatically merged instead of creating duplicates
+  - Preview shows which executions will create new trades vs merge into existing ones
+  - Clear visual indicators: **NEW** (purple badge) for new trades, **MERGE** (orange badge) for merging
+
+- **Enhanced Import Preview UI**:
+  - New summary cards showing: Total, Valid, Invalid, New Trades, Merge to Existing
+  - Position info notice explaining merge behavior when applicable
+  - Action column in preview table showing detailed merge descriptions
+  - Row highlighting: orange tint for merge operations, purple for new trades
+  - Descriptions like "Add 50 shares to existing position of 100 shares (Trade #42)"
+
+- **Position-Aware Import Confirmation**:
+  - Import results now show separate counts for created vs merged executions
+  - Success message differentiates: "3 new trade(s), 2 merged into existing positions"
+  - Detailed error messages if merge operations fail
+
+### Changed
+- **TOS Import Service** (`lib/services/tosImportService.ts`):
+  - Added `positionInfo` interface to `TOSParsedTrade` for tracking merge status
+  - New `detectExistingPositions()` function queries database for open positions
+  - New `getImportSummary()` function calculates new vs merge counts
+  - Position detection runs during preview to inform user before import
+
+- **Preview API** (`app/api/trades/import/tos/route.ts`):
+  - Now requires `portfolioId` parameter for position detection
+  - Returns enriched trades with `positionInfo` indicating action type
+  - Response includes `newTrades` and `mergedTrades` counts
+
+- **Confirm API** (`app/api/trades/import/tos/confirm/route.ts`):
+  - Handles both CREATE and MERGE actions based on `positionInfo`
+  - Uses `addExecutionToTrade()` for merging into existing positions
+  - Returns separate `created` and `merged` counts in results
+
+- **Import Page UI** (`app/trades/import/page.tsx`):
+  - Passes `portfolioId` to preview endpoint
+  - Updated interfaces to include `positionInfo` and new counts
+  - Enhanced preview table with Action column
+  - Import button shows breakdown: "Import 5 (3 new, 2 merge)"
+  - Result display shows merged execution count
+
+- **Import Instructions** updated:
+  - Explains position detection feature
+  - Documents MERGE and NEW badge meanings
+  - Clarifies automatic merging behavior
+
+### Technical Implementation
+- **Position Detection Flow**:
+  1. User selects portfolio and uploads TOS CSV
+  2. Preview endpoint parses CSV and validates trades
+  3. For each valid trade, `detectExistingPositions()` checks for open position
+  4. If open position exists, trade is marked with `action: 'MERGE'` and existing trade ID
+  5. Preview shows user which executions will merge vs create new
+  6. On confirm, system routes to appropriate handler (create or addExecutionToTrade)
+
+- **Merge Logic**:
+  - Uses existing `addExecutionToTrade()` from tradeService
+  - Validates execution won't create negative position
+  - Recalculates trade metrics after adding execution
+  - Automatically updates trade status if position closes to zero
+
+- **Database Queries**:
+  - `PositionService.findOpenTradeForSymbol()` finds matching open trade
+  - `PositionService.getPositionDetails()` gets current position size
+  - Queries scoped to selected portfolio for isolation
+
+### User Benefits
+- **No More Duplicates**: Adding to existing positions doesn't create duplicate trades
+- **Clear Preview**: See exactly what will happen before importing
+- **Position Tracking**: Executions are properly tracked within trades
+- **Accurate Metrics**: Trade averages and returns recalculated after merge
+
+### Notes
+- Position detection only works within the selected portfolio
+- Each TOS execution row is evaluated independently for merge potential
+- Merging preserves original trade's open date and trade ID
+- Users can still create new trades by importing to a different portfolio
+- Phase 5 completes position-aware import functionality
+
+---
+
 ## [12/04/2025] - Open Position Indicators & Dashboard Redesign (Phase 6)
 
 ### Added

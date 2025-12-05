@@ -5,8 +5,9 @@ import { useParams, useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, Edit, Trash2, TrendingUp, TrendingDown, DollarSign, Calendar, Tag, AlertTriangle } from 'lucide-react';
+import { ArrowLeft, Edit, Trash2, TrendingUp, TrendingDown, DollarSign, Calendar, Tag, AlertTriangle, Plus } from 'lucide-react';
 import Link from 'next/link';
+import { AddExecutionDialog } from '@/components/trades/AddExecutionDialog';
 
 interface Trade {
   id: string;
@@ -58,6 +59,7 @@ export default function TradeDetailPage() {
   const [trade, setTrade] = useState<Trade | null>(null);
   const [loading, setLoading] = useState(true);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [showAddExecutionDialog, setShowAddExecutionDialog] = useState(false);
 
   useEffect(() => {
     if (params.id) {
@@ -343,7 +345,19 @@ export default function TradeDetailPage() {
           {/* Execution History */}
           {trade.subOrders && trade.subOrders.length > 0 && (
             <Card className="p-6">
-              <h2 className="text-xl font-semibold mb-4">Execution History</h2>
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-xl font-semibold">Execution History</h2>
+                {trade.status === 'OPEN' && (
+                  <Button
+                    onClick={() => setShowAddExecutionDialog(true)}
+                    size="sm"
+                    className="flex items-center gap-2"
+                  >
+                    <Plus className="h-4 w-4" />
+                    Add Execution
+                  </Button>
+                )}
+              </div>
               <div className="overflow-x-auto">
                 <table className="w-full">
                   <thead className="bg-gray-50">
@@ -492,14 +506,14 @@ export default function TradeDetailPage() {
               Are you sure you want to delete Trade #{trade?.tradeId} - {trade?.ticker}? This action cannot be undone.
             </p>
             <div className="flex justify-end gap-3">
-              <Button 
-                variant="outline" 
+              <Button
+                variant="outline"
                 onClick={() => setShowDeleteModal(false)}
               >
                 Cancel
               </Button>
-              <Button 
-                variant="destructive" 
+              <Button
+                variant="destructive"
                 onClick={() => {
                   setShowDeleteModal(false);
                   handleDelete();
@@ -510,6 +524,20 @@ export default function TradeDetailPage() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Add Execution Dialog */}
+      {showAddExecutionDialog && trade && (
+        <AddExecutionDialog
+          tradeId={trade.id}
+          tradeTicker={trade.ticker}
+          currentPosition={typeof trade.size === 'number' ? trade.size : parseFloat(trade.size.toString())}
+          onSuccess={() => {
+            setShowAddExecutionDialog(false);
+            fetchTrade(trade.id); // Refresh trade data
+          }}
+          onCancel={() => setShowAddExecutionDialog(false)}
+        />
       )}
     </div>
   );

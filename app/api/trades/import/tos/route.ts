@@ -1,18 +1,27 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { parseTOSCsv, validateTOSTrade } from '@/lib/services/tosImportService';
+import { parseTOSCsv, validateTOSTrade, detectExistingPositions, getImportSummary } from '@/lib/services/tosImportService';
 
 /**
  * POST /api/trades/import/tos/preview
  * Preview TOS trades before importing
+ * Includes position detection to show which trades will be merged
  */
 export async function POST(request: NextRequest) {
   try {
     const formData = await request.formData();
     const file = formData.get('file') as File;
+    const portfolioId = formData.get('portfolioId') as string;
 
     if (!file) {
       return NextResponse.json(
         { error: 'No file provided' },
+        { status: 400 }
+      );
+    }
+
+    if (!portfolioId) {
+      return NextResponse.json(
+        { error: 'Portfolio ID is required for position detection' },
         { status: 400 }
       );
     }
@@ -35,9 +44,34 @@ export async function POST(request: NextRequest) {
       };
     });
 
-    // Separate valid and invalid trades
+    // Get valid trades for position detection
     const validTrades = validatedTrades.filter(t => t.validation.valid);
     const invalidTrades = validatedTrades.filter(t => !t.validation.valid);
+
+    // Detect existing positions for valid trades
+    const tradesWithPositionInfo = await detectExistingPositions(
+      validTrades.map(t => ({
+        ...t,
+        validation: undefined, // Remove validation before position detection
+      })),
+      portfolioId
+    );
+
+    // Re-add validation to trades with position info
+    const enrichedTrades = validatedTrades.map(trade => {
+      const positionTrade = tradesWithPositionInfo.find(
+        t => t.ticker === trade.ticker &&
+        t.importData.execTime === trade.importData.execTime &&
+        t.importData.qty === trade.importData.qty
+      );
+      return {
+        ...trade,
+        positionInfo: positionTrade?.positionInfo,
+      };
+    });
+
+    // Get import summary
+    const summary = getImportSummary(tradesWithPositionInfo);
 
     return NextResponse.json({
       success: true,
@@ -45,7 +79,9 @@ export async function POST(request: NextRequest) {
         totalTrades: trades.length,
         validTrades: validTrades.length,
         invalidTrades: invalidTrades.length,
-        trades: validatedTrades,
+        newTrades: summary.newTrades,
+        mergedTrades: summary.mergedTrades,
+        trades: enrichedTrades,
         errors,
         warnings,
       },

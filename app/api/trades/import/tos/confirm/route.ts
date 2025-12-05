@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createTrade } from '@/lib/services/tradeService';
+import { createTrade, addExecutionToTrade, getTradeById } from '@/lib/services/tradeService';
 import { PortfolioService } from '@/lib/services/portfolioService';
 import type { TOSParsedTrade } from '@/lib/services/tosImportService';
 
 /**
  * POST /api/trades/import/tos/confirm
  * Import confirmed TOS trades into database
+ * Supports both creating new trades and merging into existing positions
  */
 export async function POST(request: NextRequest) {
   try {
@@ -38,6 +39,8 @@ export async function POST(request: NextRequest) {
     const results = {
       successful: 0,
       failed: 0,
+      created: 0,
+      merged: 0,
       errors: [] as string[],
       importedTrades: [] as any[],
     };
@@ -55,26 +58,56 @@ export async function POST(request: NextRequest) {
           orderDate: typeof order.orderDate === 'string' ? new Date(order.orderDate) : order.orderDate,
         }));
 
-        const createdTrade = await createTrade({
-          ticker: trade.ticker,
-          side: trade.side,
-          type: trade.type,
-          size: trade.size,
-          openDate,
-          closeDate,
-          status: trade.status,
-          entryPrice: trade.entryPrice,
-          exitPrice: trade.exitPrice,
-          avgBuy: trade.avgBuy,
-          avgSell: trade.avgSell,
-          portfolioId,
-          importSource: 'thinkorswim',
-          importData: trade.importData,
-          subOrders,
-        });
+        // Check if this trade should be merged into an existing position
+        if (trade.positionInfo?.action === 'MERGE' && trade.positionInfo.existingTradeId) {
+          // Merge execution into existing trade
+          const subOrder = subOrders[0]; // TOS imports have one sub-order per trade
 
-        results.successful++;
-        results.importedTrades.push(createdTrade);
+          await addExecutionToTrade(trade.positionInfo.existingTradeId, {
+            orderType: subOrder.orderType as 'BUY' | 'SELL' | 'ADD_TO_POSITION' | 'REDUCE_POSITION',
+            quantity: subOrder.quantity,
+            price: subOrder.price,
+            orderDate: subOrder.orderDate,
+            notes: `Imported from ThinkorSwim - ${trade.importData.posEffect}`,
+          });
+
+          // Get the updated trade
+          const updatedTrade = await getTradeById(trade.positionInfo.existingTradeId);
+
+          results.successful++;
+          results.merged++;
+          results.importedTrades.push({
+            ...updatedTrade,
+            importAction: 'MERGED',
+            mergeDescription: trade.positionInfo.mergeDescription,
+          });
+        } else {
+          // Create new trade
+          const createdTrade = await createTrade({
+            ticker: trade.ticker,
+            side: trade.side,
+            type: trade.type,
+            size: trade.size,
+            openDate,
+            closeDate,
+            status: trade.status,
+            entryPrice: trade.entryPrice,
+            exitPrice: trade.exitPrice,
+            avgBuy: trade.avgBuy,
+            avgSell: trade.avgSell,
+            portfolioId,
+            importSource: 'thinkorswim',
+            importData: trade.importData,
+            subOrders,
+          });
+
+          results.successful++;
+          results.created++;
+          results.importedTrades.push({
+            ...createdTrade,
+            importAction: 'CREATED',
+          });
+        }
       } catch (error) {
         const err = error as Error;
         results.failed++;
@@ -89,6 +122,8 @@ export async function POST(request: NextRequest) {
         total: trades.length,
         successful: results.successful,
         failed: results.failed,
+        created: results.created,
+        merged: results.merged,
         errors: results.errors,
         trades: results.importedTrades,
       },
